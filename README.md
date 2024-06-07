@@ -1,0 +1,1 @@
+# world_outlook_inventory_manager
