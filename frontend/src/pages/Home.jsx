@@ -3,6 +3,7 @@
 import React from 'react';
 import { Link, Typography, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import LogoutButton from '../components/LogoutButton';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -28,14 +29,15 @@ const Home = () => {
       >
         Listings
       </Link>
-      <Link
+      {/* <Link
         variant="h4"
         component="button"
         onClick={() => navigate('/inventory')}
         sx={{ mb: 2 }}
       >
         Inventory
-      </Link>
+      </Link> */}
+      <LogoutButton />
     </Box>
   );
 };

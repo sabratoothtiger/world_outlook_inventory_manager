@@ -51,14 +51,14 @@ const sendLabelsToPrinter = async (labelData, type) => {
 };
 
 // Useful if hosting on backend, but currently just serving through public react files.
-async function loadLabelTemplate(filename) {
+/* async function loadLabelTemplate(filename) {
     const response = await fetch(`http://localhost:5001/assets/${filename}`);
     if (!response.ok) {
         throw new Error('Failed to load the label file');
     }
     const labelXml = await response.text();
     return labelXml;
-};
+}; */
 
 const loadLabelFromXml = async (xmlContent) => {
     try {
