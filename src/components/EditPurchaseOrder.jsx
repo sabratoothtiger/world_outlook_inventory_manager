@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, FormControl, InputLabel, Select, MenuItem, Grid } from '@mui/material';
 import { DateField, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { supabase } from '../client';
+import { supabase } from '../supabase';
 import { useSnackbar } from 'notistack';
 import EditIcon from '@mui/icons-material/Edit';
 
@@ -17,7 +17,7 @@ const EditPurchaseOrder = ({ purchaseOrder, setPurchaseOrder, fetchPurchaseOrder
   }, []);
 
   async function fetchStatuses() {
-    const { data } = await supabase.from('purchase_order_statuses').select('name');
+    const { data } = await supabase.from('purchase_order_statuses').select('name').order('id', {ascending: true});
     setStatuses(data.map((status) => status.name));
   }
 
@@ -34,13 +34,17 @@ const EditPurchaseOrder = ({ purchaseOrder, setPurchaseOrder, fetchPurchaseOrder
       await supabase
         .from('purchase_orders')
         .update({
-          order_date: purchaseOrder.order_date ? purchaseOrder.order_date.toISOString() : null,
+          /* order_date: purchaseOrder.order_date ? purchaseOrder.order_date.toISOString() : null, */
           tracking_number: purchaseOrder.tracking_number,
           status: purchaseOrder.status,
           acquisition_cost: purchaseOrder.acquisition_cost,
         })
         .eq('id', purchaseOrder.id);
-
+      await supabase
+        .from('purchase_order_histories')
+        .insert([
+          { purchase_order_id: purchaseOrder.id, status: purchaseOrder.status },
+        ]) 
       enqueueSnackbar('Purchase order updated successfully.', { variant: 'success' });
       setOpenEditDialog(false);
       fetchPurchaseOrder();
@@ -103,7 +107,7 @@ const EditPurchaseOrder = ({ purchaseOrder, setPurchaseOrder, fetchPurchaseOrder
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
+              {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DateField
                   label="Ordered Date"
                   name="order_date"
@@ -111,7 +115,7 @@ const EditPurchaseOrder = ({ purchaseOrder, setPurchaseOrder, fetchPurchaseOrder
                   onChange={handleDateChange}
                   fullWidth
                 />
-              </LocalizationProvider>
+              </LocalizationProvider> */}
             </Grid>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>

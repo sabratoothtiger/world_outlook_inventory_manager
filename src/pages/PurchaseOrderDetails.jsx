@@ -4,15 +4,21 @@ import Box from "@mui/material/Box";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
-import { supabase } from "../client";
+import { supabase } from "../supabase";
 import EditPurchaseOrder from "../components/EditPurchaseOrder";
 import DeletePurchaseOrder from "../components/DeletePurchaseOrder";
 import InventoryItemsTable from "../components/PurchaseOrderInventoryItemsTable";
+import { formatTrackingUrl } from "../utils/dataFormatting";
+import { Grid, Paper, Button } from "@mui/material";
 import dayjs from "dayjs";
+import HomeIcon from "@mui/icons-material/Home";
+import CheckIcon from '@mui/icons-material/Check';
+import { useSnackbar } from "notistack";
 
 export default function PurchaseOrderDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const [purchaseOrder, setPurchaseOrder] = useState(null);
   const [inventoryItems, setInventoryItems] = useState([]);
 
@@ -29,7 +35,7 @@ export default function PurchaseOrderDetails() {
     const { data } = await supabase
       .from("inventory_items")
       .select("*")
-      .eq("purchase_order_reference", id);
+      .eq("purchase_order_reference_id", id);
     setInventoryItems(data);
   }, [id]);
 
@@ -42,9 +48,42 @@ export default function PurchaseOrderDetails() {
     return <div>Loading...</div>;
   }
 
+  const handleStatusProcessed = async () => {
+    try {
+      const { error } = await supabase
+        .from("purchase_orders")
+        .update({ status: "Processed" })
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+      await supabase
+      .from('purchase_order_histories')
+      .insert([
+        { purchase_order_id: id, status: "Processed" },
+      ]) 
+      fetchPurchaseOrder(); 
+      enqueueSnackbar("Purchase order updated successfully", {
+        variant: "success",
+      });
+    } catch (error) {
+      enqueueSnackbar("Error updating purchase order: " + error.message, {
+        variant: "error",
+      });
+      console.error("Error updating purchase order:", error);
+    }
+  };
+
   return (
     <Box sx={{ padding: 2 }}>
       <Breadcrumbs aria-label="breadcrumb">
+        <Link
+          underline="hover"
+          color="inherit"
+          onClick={() => navigate("/")}
+          sx={{ display: "flex", alignItems: "center" }}
+        >
+          <HomeIcon sx={{ marginRight: 0.5 }} />
+          Home
+        </Link>
         <Link
           underline="hover"
           color="inherit"
@@ -61,6 +100,15 @@ export default function PurchaseOrderDetails() {
       >
         Purchase Order: {id}
         <Box>
+          <Button
+            onClick={handleStatusProcessed}
+            variant="contained"
+            color="success"
+            sx={{ mr: 1 }}
+            startIcon={<CheckIcon />}
+          >
+            Mark as Processed
+          </Button>
           <EditPurchaseOrder
             purchaseOrder={purchaseOrder}
             setPurchaseOrder={setPurchaseOrder}
@@ -72,44 +120,59 @@ export default function PurchaseOrderDetails() {
           />
         </Box>
       </Typography>
-      <Typography variant="body1" gutterBottom>
-        Supplier: {purchaseOrder.supplier}
-      </Typography>
-      <Typography variant="body1" gutterBottom>
-        Order Date:{" "}
-        {purchaseOrder.order_date
-          ? dayjs(purchaseOrder.order_date).format("YYYY-MM-DD")
-          : "N/A"}
-      </Typography>
-      <Typography variant="body1" gutterBottom>
-        Status: {purchaseOrder.status}
-      </Typography>
-      <Typography variant="body1" gutterBottom>
-        Tracking Number: {purchaseOrder.tracking_number}
-      </Typography>
-      <Typography variant="body1" gutterBottom>
-        Acquisition Cost:{" "}
-        {purchaseOrder.acquisition_cost.toLocaleString("en-US", {
-          style: "currency",
-          currency: "USD",
-        })}
-      </Typography>
-      <Typography variant="body1" gutterBottom>
-        Avg Cost per Item:{" "}
-        {(purchaseOrder.itemCount === 0 || isNaN(purchaseOrder.itemCount) || isNaN(purchaseOrder.acquisition_cost)
-            ? 0.00
-            : purchaseOrder.acquisition_cost / purchaseOrder.itemCount
-        ).toLocaleString("en-US", {
-            style: "currency",
-            currency: "USD",
-        })}
-        </Typography>
-
+      <Paper elevation={3} style={{ padding: '16px', marginBottom: '16px' }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6} md={4}>
+            <Typography variant="body1" gutterBottom>
+              Supplier Reference ID: {purchaseOrder.supplier_reference_id}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Typography variant="body1" gutterBottom>
+              Order Date:{" "}
+              {purchaseOrder.order_date
+                ? dayjs(purchaseOrder.order_date).format("YYYY-MM-DD")
+                : "N/A"}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Typography variant="body1" gutterBottom>
+              Status: {purchaseOrder.status}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Typography variant="body1" gutterBottom>
+              Tracking Number: {formatTrackingUrl(purchaseOrder.tracking_number)}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Typography variant="body1" gutterBottom>
+              Acquisition Cost:{" "}
+              {purchaseOrder.acquisition_cost.toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
+              })}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Typography variant="body1" gutterBottom>
+              Avg Cost per Item:{" "}
+              {(purchaseOrder.item_count === 0 || isNaN(purchaseOrder.item_count) || isNaN(purchaseOrder.acquisition_cost)
+                  ? '$--.--'
+                  : purchaseOrder.acquisition_cost / purchaseOrder.item_count
+              ).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+              })}
+            </Typography>
+          </Grid>
+        </Grid>
+      </Paper>
       <Box sx={{ height: 400, width: "100%", marginTop: 2 }}>
         <InventoryItemsTable
           purchaseOrder={purchaseOrder}
           inventoryItems={inventoryItems}
-          fetchInventoryItems={fetchInventoryItems}
+          setInventoryItems={setInventoryItems}
         />
       </Box>
     </Box>

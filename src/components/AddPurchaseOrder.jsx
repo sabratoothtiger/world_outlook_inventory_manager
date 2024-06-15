@@ -16,9 +16,9 @@ import {
 } from "@mui/material";
 import { DateField, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { supabase } from "../client";
+import { supabase } from "../supabase";
 import { enqueueSnackbar } from "notistack";
-import { getFormattedTodayDate } from "../formattingUtils";
+import { getFormattedTodayDate } from "../utils/dataFormatting";
 import { NumericFormat } from "react-number-format";
 import AddIcon from "@mui/icons-material/Add";
 
@@ -61,10 +61,11 @@ const AddPurchaseOrderForm = ({ fetchPurchaseOrders }) => {
   const handleAddDialogSave = async (event) => {
     event.preventDefault();
     const currentTime = new Date(Date.now()).toISOString();
+    const purchaseOrderId = purchaseOrder.supplier + "_" + purchaseOrder.supplier_reference_id;
 
     const { data, error } = await supabase.from("purchase_orders").insert([
       {
-        id: purchaseOrder.supplier + "_" + purchaseOrder.supplier_reference_id,
+        id: purchaseOrderId,
         created_at: currentTime,
         last_updated_at: currentTime,
         supplier: purchaseOrder.supplier,
@@ -82,7 +83,13 @@ const AddPurchaseOrderForm = ({ fetchPurchaseOrders }) => {
       enqueueSnackbar("Oh no! We couldn't save the purchase order", { variant: 'error' })
       return;
     } else {
-      enqueueSnackbar("Yay! We added purchase order " + data.id, { variant: 'success' })
+      await supabase
+        .from('purchase_order_histories')
+        .insert([
+          { purchase_order_id: purchaseOrderId, status: purchaseOrder.status },
+        ]) 
+      enqueueSnackbar("Yay! We added the purchase order. ", { variant: 'success' })
+      
     }
 
     setPurchaseOrder({

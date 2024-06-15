@@ -1,14 +1,11 @@
-import { formatDate, formatFinancialData } from "../formattingUtils";
+import { formatDate, formatFinancialData } from "../utils/dataFormatting";
+import { useEffect, useState } from 'react';
+import { supabase } from '../supabase';
 
 export function PurchaseOrderTableColumns() {
   const columns = [
     {
-      field: "supplier",
-      headerName: "Supplier",
-      minWidth: 30,
-    },
-    {
-      field: "supplier_reference_id",
+      field: "id",
       headerName: "ID",
       minWidth: 100,
     },
@@ -78,42 +75,42 @@ export function POInventoryItemsTableColumns() {
       field: "category",
       headerName: "Category",
       type: "singleSelect",
-      width: 100,
+      width: 80,
       editable: false,
     },
     {
       field: "subcategory",
       headerName: "Subcategory",
       type: "singleSelect",
-      width: 100,
+      width: 80,
       editable: false,
     },
     {
       field: "brand",
       headerName: "Brand",
       type: "singleSelect",
-      width: 100,
+      width: 80,
       editable: false,
     },
     {
       field: "model",
       headerName: "Model",
       type: "singleSelect",
-      width: 100,
+      width: 80,
       editable: false,
     },
     {
       field: "f_stop",
       headerName: "F-stop",
       type: "singleSelect",
-      width: 180,
+      width: 80,
       editable: false,
     },
     {
       field: "focal_length",
       headerName: "Focal Length",
       type: "singleSelect",
-      width: 100,
+      width: 80,
       editable: false,
     },
     {
@@ -123,7 +120,78 @@ export function POInventoryItemsTableColumns() {
       type: "singleSelect",
       editable: false,
     },
+    {
+      field: 'listing_id',
+      headerName: 'Listing',
+      width: 140,
+      type: "text",
+      editable: false,
+    },
   ];
 
   return columns;
+}
+
+export function ListingsTableColumns() {
+  const [inventoryLinked, setInventoryLinked] = useState({});
+
+  useEffect(() => {
+    async function fetchInventoryLinked() {
+      // Fetch the data from the inventory_items table and check if there are any matches
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('listing_id');
+      if (error) {
+        console.error('Error fetching inventory items:', error);
+        return;
+      }
+      // Extract the listing IDs from the data
+      const linkedListings = data.map((item) => item.listing_id);
+      // Update the state with the linked listings
+      setInventoryLinked(linkedListings.reduce((acc, val) => {
+        acc[val] = true;
+        return acc;
+      }, {}));
+    }
+
+    fetchInventoryLinked();
+  }, []);
+
+  const columns = [
+    {
+      field: "id",
+      headerName: "Listing ID",
+      flex: 0,
+      minWidth: 170,
+    },
+    {
+      field: "title",
+      headerName: "Title",
+      flex: 1,
+    },
+    {
+      field: "label_printed",
+      headerName: "Printed?",
+      flex: 1,
+      maxWidth: 80,
+    },
+    {
+      field: 'linked_to_inventory',
+      headerName: 'Linked?',
+      flex: 1,
+      maxWidth: 80,
+      renderCell: (params) => {
+        const listingID = params.row.id;
+        return inventoryLinked[listingID] ? 'Yes' : 'No';
+      },
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      flex: 1,
+      maxWidth: 120,
+    },
+  ];
+
+  return columns
 }

@@ -1,27 +1,44 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "../client";
-import AddPurchaseOrderForm from "../components/AddPurchaseOrderForm";
-import PurchaseOrderTableEditable from "../components/PurchaseOrderTableEditable";
+import { supabase } from "../supabase";
 import {
-  Box,
-  Breadcrumbs,
-  Link,
-  Typography,
-  IconButton,
-  Menu,
-  MenuItem,
-  TextField, // Import TextField for search field
-} from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
+    Box,
+    Breadcrumbs,
+    Link,
+    Typography,
+    IconButton,
+    Menu,
+    MenuItem,
+  } from "@mui/material";
+  import { DataGrid, GridToolbarQuickFilter } from "@mui/x-data-grid";
+  import { useNavigate } from "react-router-dom";
+  import { PurchaseOrderTableColumns } from "../components/TableColumns";
+  import AddPurchaseOrder from "../components/AddPurchaseOrder";
+  
+  // Icons
+  import MoreVertIcon from "@mui/icons-material/MoreVert";
+  import HomeIcon from "@mui/icons-material/Home";
+
+function CustomToolbar() {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          width: "100%",
+          marginBottom: 2,
+        }}
+      >
+        <GridToolbarQuickFilter sx={{ width: "20%" }} />
+      </Box>
+    );
+  }
 
 export default function PurchaseOrdersPage() {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [loading, setLoading] = useState(true);  
-  const [filteredPurchaseOrders, setFilteredPurchaseOrders] = useState([]);
-  const [searchQuery, setSearchQuery] = useState(""); // State for search query
-  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedRow, setSelectedRow] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPurchaseOrders();
@@ -31,9 +48,24 @@ export default function PurchaseOrdersPage() {
     setLoading(true);
     const { data } = await supabase.from("purchase_orders").select("*");
     setPurchaseOrders(data);
-    setFilteredPurchaseOrders(data);
     setLoading(false);
   }
+
+  var columns = PurchaseOrderTableColumns();
+  columns = columns.map((col) => ({ ...col, flex: 1 })); // Automatically fill the width of the viewport
+
+  const handleRowSelectionChange = (selection) => {
+    if (selection.length === 1) {
+      setSelectedRow(selection[0]);
+    } else {
+      setSelectedRow(null);
+    }
+  };
+
+  const handleRowDoubleClick = (row) => {
+    navigate(`/purchase-orders/${row.id}`);
+  };
+ 
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -53,27 +85,19 @@ export default function PurchaseOrdersPage() {
     handleMenuClose();
   };
 
-  const handleSearchChange = (event) => {
-    const query = event.target.value.toLowerCase();
-    const filteredOrders = purchaseOrders.filter((order) => {
-      for (const key in order) {
-        if (Object.prototype.hasOwnProperty.call(order, key)) {
-          const value = String(order[key]).toLowerCase();
-          if (value.includes(query) || (typeof order[key] === "number" && value.includes(parseFloat(query)))) {
-            return true;
-          }
-        }
-      }
-      return false;
-    });
-    setSearchQuery(query);
-    setFilteredPurchaseOrders(filteredOrders);
-  };
-
   return (
     <>
       <Box sx={{ padding: 2 }}>
         <Breadcrumbs aria-label="breadcrumb">
+        <Link
+        underline="hover"
+        color="inherit"
+        onClick={() => navigate("/")}
+        sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+      >
+        <HomeIcon sx={{ marginRight: 0.5 }} />
+        
+      </Link>
           <Link
             underline="hover"
             color="inherit"
@@ -82,14 +106,10 @@ export default function PurchaseOrdersPage() {
             Purchase Orders
           </Link>
         </Breadcrumbs>
-        <Typography
-          variant="h4"
-          gutterBottom
-          sx={{ display: "flex", justifyContent: "space-between" }}
-        >
-          Purchase Orders
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <AddPurchaseOrderForm fetchPurchaseOrders={fetchPurchaseOrders} />
+        <Box sx={{ display: "flex", alignItems: "center", marginBottom: 2 }}>
+          <Typography variant="h4">Purchase Orders</Typography>
+          <Box sx={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
+          <AddPurchaseOrder fetchPurchaseOrders={fetchPurchaseOrders} />
             <IconButton
               color="inherit"
               aria-label="more"
@@ -110,19 +130,26 @@ export default function PurchaseOrdersPage() {
               <MenuItem onClick={handlePullFromEbay}>Pull from eBay</MenuItem>
             </Menu>
           </Box>
-        </Typography>
-
-        {/* Search field */}
-        <TextField
-          label="Search"
-          variant="outlined"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          sx={{ marginBottom: 2 }}
-        />
-
-        <Box sx={{ height: 400, width: "100%", marginTop: 2 }}>
-          <PurchaseOrderTableEditable rows={filteredPurchaseOrders} loading={loading} />
+        </Box>
+        <Box sx={{ height: 400, width: "100%" }}>
+          <Box sx={{ height: 500, width: "100%" }}>
+            <DataGrid
+              rows={purchaseOrders || []}
+              columns={columns || []}
+              loading={loading}
+              pageSizeOptions={[25, 50, 100]}
+              initialState={{
+                pagination: {
+                  pageSize: 25,
+                },
+              }}
+              components={{ Toolbar: CustomToolbar }}
+              onSelectionModelChange={handleRowSelectionChange}
+              onRowDoubleClick={handleRowDoubleClick}
+              rowSelectionModel={selectedRow ? [selectedRow] : []}
+              autoHeight
+            />
+          </Box>
         </Box>
       </Box>
     </>

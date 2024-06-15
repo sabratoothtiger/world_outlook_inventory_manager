@@ -5,7 +5,7 @@ import { supabase } from '../supabase';
 import { useSnackbar } from 'notistack';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const DeletePurchaseOrder = ({ purchaseOrderId, fetchPurchaseOrders }) => {
+const DeleteInventoryItem = ({ purchaseOrderId, inventoryItemId, fetchInventoryItems }) => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const { enqueueSnackbar } = useSnackbar();
@@ -27,41 +27,28 @@ const DeletePurchaseOrder = ({ purchaseOrderId, fetchPurchaseOrders }) => {
     }
 
     try {
-      const { error: poDeletion } = await supabase
-      .from('purchase_order_histories')
+      const {error: historyDelete} = await supabase
+      .from('inventory_item_histories')
       .delete() 
-      .eq('purchase_order_id', purchaseOrderId)
-      if (poDeletion) throw new Error(poDeletion.message);
-
-
-      const { data, error: inventoryCollectionError } = await supabase
-        .from('inventory_items')
-        .select('id')
-        .eq('purchase_order_reference_id', purchaseOrderId)
-      if (inventoryCollectionError) throw new Error(inventoryCollectionError.message);
-      for (const item of data)
-        {{await supabase
-        .from('inventory_item_histories')
-        .delete() 
-        .eq('inventory_item_id', item.id)}
-        {await supabase
-        .from('inventory_items')
-        .delete() 
-        .eq('id', item.id)}
-      }
-
+      .eq('inventory_item_id', inventoryItemId)
+      if (historyDelete) throw new Error(historyDelete.message)
       const { error } = await supabase
-        .from('purchase_orders')
+        .from('inventory_items')
         .delete()
-        .eq('id', purchaseOrderId);
+        .eq('inventoryItemId', inventoryItemId);
       if (error) throw new Error(error.message);
+      
+      // Update purchase order item count
+        const { error: purchaseOrderError } = await supabase
+      .rpc('decrement_item_count', { purchase_order_id: purchaseOrderId });
 
+      if (purchaseOrderError) throw new Error(purchaseOrderError.message);
       navigate('/'); // Navigate back to the purchase orders list
-      enqueueSnackbar('Purchase order deleted successfully.', { variant: 'success' });
+      enqueueSnackbar('Inventory item deleted successfully.', { variant: 'success' });
       fetchPurchaseOrders();
     } catch (error) {
-      enqueueSnackbar('Error deleting purchase order: ' + error, { variant: 'error' });
-      console.error('Error deleting purchase order:', error);
+      enqueueSnackbar('Error deleting inventory item: ' + error, { variant: 'error' });
+      console.error('Error deleting inventory item:', error);
     } finally {
       handleDialogClose();
     }
@@ -69,15 +56,6 @@ const DeletePurchaseOrder = ({ purchaseOrderId, fetchPurchaseOrders }) => {
 
   return (
     <>
-      <Button
-        variant="contained"
-        color="secondary"
-        onClick={handleDeleteClick}
-        startIcon={<DeleteIcon />}
-      >
-        Delete
-      </Button>
-
       <Dialog open={openDeleteDialog} onClose={handleDialogClose}>
         <DialogTitle>Careful!</DialogTitle>
         <DialogContent>
