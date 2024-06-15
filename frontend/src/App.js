@@ -25,18 +25,10 @@ function App() {
   useEffect(() => {
     // Fetch session on initial load
     const getSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
     };
-
     getSession();
-
-    // Listen for changes to the auth state
-    const authListener = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
   }, []);
 
   const handleSignIn = (user) => {
@@ -48,30 +40,11 @@ function App() {
       <SnackbarProvider>
         <Router>
           <Routes>
-            <Route
-              path="/signin"
-              element={<SignIn onSignIn={handleSignIn} />}
-            />
-            <Route
-              path="/"
-              element={<ProtectedRoute component={Home} user={user} />}
-            />
-            <Route
-              path="/purchase-orders"
-              element={
-                <ProtectedRoute component={PurchaseOrders} user={user} />
-              }
-            />
-            <Route
-              path="/purchase-orders/:id"
-              element={
-                <ProtectedRoute component={PurchaseOrderDetails} user={user} />
-              }
-            />
-            <Route
-              path="/listings"
-              element={<ProtectedRoute component={Listings} user={user} />}
-            />
+            <Route path="/signin" element={<SignIn onSignIn={handleSignIn} />} />
+            <Route path="/" element={<ProtectedRoute component={Home} user={user} />} />
+            <Route path="/purchase-orders" element={<ProtectedRoute component={PurchaseOrders} user={user} />} />
+            <Route path="/purchase-orders/:id" element={<ProtectedRoute component={PurchaseOrderDetails} user={user} />} />
+            <Route path="/listings" element={<ProtectedRoute component={Listings} user={user} />} />
             {/* <Route path="/listings/:id" element={<ListingDetails />} /> */}
           </Routes>
         </Router>
