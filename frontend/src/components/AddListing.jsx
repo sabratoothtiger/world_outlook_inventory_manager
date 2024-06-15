@@ -72,7 +72,7 @@ const AddListing = ({
         last_updated_at: currentTime,
         listing_site: listing.listing_site,
         listing_site_reference_id: listing.listing_site_reference_id,
-        listed_date: listing.listed_date || null,
+        listing_date: listing.listed_date || null,
         title: listing.tracking_number,
         serial_number: listing.serial_number,
         status: listing.status,

@@ -21,7 +21,7 @@ import { parseTitleForLabel } from "../utils/dataFormatting";
 import AddListing from "../components/AddListing";
 import UpdateStatusDialog from "../components/UpdateListingStatusDialog";
 import { ListingsTableColumns } from "../components/TableColumns";
-import ListingCard from "../components/ListingCard"
+import ListingCard from "../components/ListingCard";
 
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import HomeIcon from "@mui/icons-material/Home";
@@ -93,32 +93,34 @@ const Listings = () => {
   const [selectedListingIds, setSelectedListingIds] = useState([]);
   const [openBulkStatusUpdateDialog, setOpenBulkStatusUpdateDialog] =
     useState(false);
-    const [listingDetailsDrawerContentKey, setListingDetailsDrawerContentKey] =
+  const [listingDetailsDrawerContentKey, setListingDetailsDrawerContentKey] =
     useState(0);
   const [listingDetailsDrawerContent, setListingDetailsDrawerContent] =
-    useState(<Box
-      key={listingDetailsDrawerContentKey}
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        margin: 1,
-        height: "100%",
-      }}
-    >
-      <Stack
+    useState(
+      <Box
+        key={listingDetailsDrawerContentKey}
         sx={{
           display: "flex",
           alignItems: "center",
+          justifyContent: "center",
           margin: 1,
+          height: "100%",
         }}
       >
-        <ExploreIcon color="disabled" sx={{ fontSize: 60 }} />
-        <Typography variant="h6" color="gray">
-          Select a row
-        </Typography>
-      </Stack>
-    </Box>);
+        <Stack
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            margin: 1,
+          }}
+        >
+          <ExploreIcon color="disabled" sx={{ fontSize: 60 }} />
+          <Typography variant="h6" color="gray">
+            Select a row
+          </Typography>
+        </Stack>
+      </Box>
+    );
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -128,7 +130,10 @@ const Listings = () => {
   async function fetchListings() {
     try {
       setLoading(true);
-      const { data, error } = await supabase.from("listings").select("*").order('id', { ascending: false });
+      const { data, error } = await supabase
+        .from("listings")
+        .select("*")
+        .order("id", { ascending: false });
       if (error) throw new Error(error.message);
       setListings(data);
     } catch (error) {
@@ -141,7 +146,10 @@ const Listings = () => {
 
   async function fetchListingsForDetailCards(listingIds) {
     try {
-      const { data, error } = await supabase.from("listings").select("*").in("id", listingIds);
+      const { data, error } = await supabase
+        .from("listings")
+        .select("*")
+        .in("id", listingIds);
       if (error) throw new Error(error.message);
       return data;
     } catch (error) {
@@ -197,9 +205,12 @@ const Listings = () => {
           <Stack sx={{ marginRight: 1 }}>
             <Stack spacing={2}>
               {Array.isArray(listingsData) && listingsData.length > 0 ? (
-                listingsData.slice().reverse().map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
-                ))
+                listingsData
+                  .slice()
+                  .reverse()
+                  .map((listing) => (
+                    <ListingCard key={listing.id} listing={listing} />
+                  ))
               ) : (
                 <Typography>No listings available</Typography>
               )}
@@ -255,10 +266,8 @@ const Listings = () => {
         if (listingStatusUpdateError)
           throw new Error(listingStatusUpdateError.message);
         await supabase
-        .from('listing_histories')
-        .insert([
-          { listing_id: listingId, status: newStatus },
-        ]) 
+          .from("listing_histories")
+          .insert([{ listing_id: listingId, status: newStatus }]);
         const listingStatusToInventoryItemStatusMapping = {
           Active: "Listed",
           Sold: "Sold",
@@ -268,17 +277,24 @@ const Listings = () => {
         };
         const inventoryItemStatus =
           listingStatusToInventoryItemStatusMapping[newStatus];
-        const { data, error: inventoryItemStatusUpdateError } = await supabase
+        const { error: inventoryItemStatusUpdateError } = await supabase
           .from("inventory_items")
           .update({ status: inventoryItemStatus })
           .eq("listing_id", listingId);
         if (inventoryItemStatusUpdateError)
           throw new Error(inventoryItemStatusUpdateError.message);
+        const { data: inventoryItems } = await supabase
+          .from("inventory_items")
+          .select("id")
+          .eq("listing_id", listingId);
         await supabase
-      .from('inventory_item_histories')
-      .insert([
-        { inventory_item_id: data[0].id, status: inventoryItemStatus },
-      ]) 
+          .from("inventory_item_histories")
+          .insert([
+            {
+              inventory_item_id: inventoryItems[0].id,
+              status: inventoryItemStatus,
+            },
+          ]);
         setListings((prevListings) =>
           prevListings.map((listing) =>
             listing.id === listingId
@@ -286,8 +302,10 @@ const Listings = () => {
               : listing
           )
         );
-      setListingDetailsDrawerContentKey((listingDetailsDrawerContentKey) => listingDetailsDrawerContentKey + 1);
-      };
+        setListingDetailsDrawerContentKey(
+          (listingDetailsDrawerContentKey) => listingDetailsDrawerContentKey + 1
+        );
+      }
     } catch (error) {
       enqueueSnackbar("Error updating status: " + error.message, {
         variant: "error",
@@ -452,14 +470,18 @@ const Listings = () => {
             </Box>
           </Box>
         </Grid>
-        <Grid item xs={9} style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 88px)' }}>
+        <Grid
+          item
+          xs={9}
+          style={{ overflowY: "auto", maxHeight: "calc(100vh - 88px)" }}
+        >
           <Box>
             <DataGrid
               rows={listings || []}
               columns={columns || []}
               loading={loading}
               getRowClassName={(params) =>
-                params.indexRelativeToCurrentPage % 2 === 0 ? 'even' : 'odd'
+                params.indexRelativeToCurrentPage % 2 === 0 ? "even" : "odd"
               }
               pageSizeOptions={[10, 25, 50, 100]}
               initialState={{
@@ -485,7 +507,11 @@ const Listings = () => {
             />
           </Box>
         </Grid>
-        <Grid item xs={3} style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 88px)' }}>
+        <Grid
+          item
+          xs={3}
+          style={{ overflowY: "auto", maxHeight: "calc(100vh - 88px)" }}
+        >
           {listingDetailsDrawerContent}
         </Grid>
       </Grid>
