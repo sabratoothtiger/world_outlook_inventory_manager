@@ -10,8 +10,8 @@ app = Flask(__name__)
 CORS(app, origins='*')
 
 # Initialize Supabase
-supabase_url = 'https://tlhwgrvzfnhfhkhsgqdh.supabase.co'
-supabase_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsaHdncnZ6Zm5oZmhraHNncWRoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxNTI5NDczNCwiZXhwIjoyMDMwODcwNzM0fQ.dHfoCSUCHFPHzO0oDmWkPTeVJCYouLU9Tt2DnMFk9Mo'
+supabase_url = os.environ.get('SUPABASE_URL')
+supabase_key = os.environ.get('SUPABASE_KEY')
 supabase = create_client(supabase_url, supabase_key)
 
 def parse_serial_number_from_title(title):

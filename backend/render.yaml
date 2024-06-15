@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: flask-app
+    env: python
+    plan: free
+    buildCommand: ""
+    startCommand: gunicorn server:app
+    envVars:
+      - key: SUPABASE_URL
+        value: https://tlhwgrvzfnhfhkhsgqdh.supabase.co
+      - key: SUPABASE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsaHdncnZ6Zm5oZmhraHNncWRoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxNTI5NDczNCwiZXhwIjoyMDMwODcwNzM0fQ.dHfoCSUCHFPHzO0oDmWkPTeVJCYouLU9Tt2DnMFk9Mo
+    autoDeploy: true
