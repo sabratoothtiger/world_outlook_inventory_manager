@@ -65,7 +65,7 @@ const AddListing = ({
     const currentTime = new Date(Date.now()).toISOString();
     const listingId = listing.listing_site + "_" + listing.listing_site_reference_id;
 
-    const { data, error } = await supabase.from("listings").insert([
+    const { error } = await supabase.from("listings").insert([
       {
         id: listingId,
         created_at: currentTime,

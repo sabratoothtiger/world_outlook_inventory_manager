@@ -56,7 +56,7 @@ const PurchaseOrderInventoryItemsTable = ({ purchaseOrder, inventoryItems, setIn
     try {
       const item = inventoryItems.find((item) => item.id === itemId);
       console.log('Item: ', item)
-      const barcode = 'INV' + '^' + item.id + '^' + item.serial_number;
+      const barcode = 'INV^' + item.id + '^' + item.serial_number;
       const labelData = [{
         'Inventory ID': item.id,
         'Category': item.category,

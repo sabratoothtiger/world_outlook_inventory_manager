@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, FormControl, InputLabel, Select, MenuItem, Grid } from '@mui/material';
-import { DateField, LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+// import { DateField, LocalizationProvider } from '@mui/x-date-pickers';
+// import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { supabase } from '../supabase';
 import { useSnackbar } from 'notistack';
 import EditIcon from '@mui/icons-material/Edit';
@@ -61,12 +61,14 @@ const EditPurchaseOrder = ({ purchaseOrder, setPurchaseOrder, fetchPurchaseOrder
     });
   };
 
+  /* 
   const handleDateChange = (date) => {
     setPurchaseOrder({
       ...purchaseOrder,
       order_date: date,
     });
-  };
+  }; 
+  */
 
   return (
     <>

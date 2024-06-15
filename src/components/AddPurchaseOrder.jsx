@@ -63,7 +63,7 @@ const AddPurchaseOrderForm = ({ fetchPurchaseOrders }) => {
     const currentTime = new Date(Date.now()).toISOString();
     const purchaseOrderId = purchaseOrder.supplier + "_" + purchaseOrder.supplier_reference_id;
 
-    const { data, error } = await supabase.from("purchase_orders").insert([
+    const { error } = await supabase.from("purchase_orders").insert([
       {
         id: purchaseOrderId,
         created_at: currentTime,

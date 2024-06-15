@@ -8,8 +8,6 @@ import {
   Button,
   Chip,
   Box,
-  IconButton,
-  Divider,
 } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LinkIcon from "@mui/icons-material/Link";
@@ -18,9 +16,7 @@ import SellIcon from "@mui/icons-material/Sell";
 import PriceCheckIcon from "@mui/icons-material/PriceCheck";
 import EditIcon from "@mui/icons-material/Edit";
 import InventoryIcon from "@mui/icons-material/Inventory";
-import NumbersIcon from '@mui/icons-material/Numbers';
 import { supabase } from "../supabase";
-import { Link } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import InventoryLinkDrawer from "./InventoryLinkDrawer";
 
@@ -53,15 +49,8 @@ const formatSoldInfo = (listing) => {
   );
 };
 
-const openListingUrlButton = (url) => {
-  const handleClick = () => {
-    window.open(url, "_blank");
-  };
-  return (
-    <IconButton onClick={handleClick}>
-      <OpenInNewIcon sx={{ fontSize: 18 }} />
-    </IconButton>
-  );
+const handleListingUrlButtonClick = (listing) => {
+  window.open(listing.listing_url, "_blank");
 };
 
 const formatListingInfo = (listing) => {
@@ -93,7 +82,6 @@ const formatListingInfo = (listing) => {
     </>
   );
 };
-
 
 const listingStatusChip = (listingStatus) => {
   switch (listingStatus) {
@@ -187,7 +175,9 @@ const ListingCard = ({ listing }) => {
         </Typography>
         <Typography variant="body2" color="text.secondary">
           <InventoryIcon fontSize="inherit" />{" "}
-          {inventoryItem ? (inventoryItem.id + " (SN: " + inventoryItem.serial_number + ")") : "No inventory item linked"}
+          {inventoryItem
+            ? inventoryItem.id + " (SN: " + inventoryItem.serial_number + ")"
+            : "No inventory item linked"}
         </Typography>{" "}
       </CardContent>
       <CardActions
@@ -201,10 +191,10 @@ const ListingCard = ({ listing }) => {
           <LinkIcon />
         </Button>{" "}
         <InventoryLinkDrawer
-                openLinkDrawer={openLinkDrawer}
-                handleLinkDrawerClose={handleLinkDrawerClose}
-                listing={listing}
-            />
+          openLinkDrawer={openLinkDrawer}
+          handleLinkDrawerClose={handleLinkDrawerClose}
+          listing={listing}
+        />
         <Button size="small">
           <HistoryIcon />
         </Button>{" "}
@@ -212,14 +202,12 @@ const ListingCard = ({ listing }) => {
         <Button size="small">
           <EditIcon />
         </Button>
-        <Button size="small">
+        <Button size="small" onClick={handleListingUrlButtonClick}>
           <OpenInNewIcon />
         </Button>
       </CardActions>
     </Card>
-    
   );
 };
-
 
 export default ListingCard;

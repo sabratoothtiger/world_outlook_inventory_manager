@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Drawer,
   Box,
@@ -11,56 +11,27 @@ import {
 import { supabase } from '../supabase';
 import { enqueueSnackbar } from 'notistack';
 
-const InventoryLinkDrawer = ({ openLinkDrawer, setOpenLinkDrawer, handleLinkDrawerClose, listing }) => {
+const InventoryLinkDrawer = ({ openLinkDrawer, handleLinkDrawerClose, listing }) => {
   const [inventoryItems, setInventoryItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [suggestedItem, setSuggestedItem] = useState(null);
-
-  useEffect(() => {
-    if (listing) {
-      fetchUnlinkedInventoryItems();
-      fetchLinkedInventoryItem();
-    }
-  }, [listing]);
-
-  const fetchUnlinkedInventoryItems = async () => {
+  const fetchUnlinkedInventoryItems = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('inventory_items')
         .select('*, inventory_item_statuses(is_linkable)')
         .is('listing_id', null)
         .eq('inventory_item_statuses.is_linkable', true);
-
+  
       if (error) throw new Error(error.message);
-
       setInventoryItems(data);
     } catch (error) {
       enqueueSnackbar('Error fetching inventory items', { variant: 'error' });
       console.error('Error fetching inventory items: ', error);
     }
-  };
+  }, []); // Add specific dependencies if there are any
 
-  const fetchLinkedInventoryItem = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .select('*')
-        .eq('listing_id', listing.id);
-
-      if (error) throw new Error(error.message);
-
-      if (data.length > 0) {
-        setSelectedItem(data[0]);
-      } else {
-        fetchSuggestedItem();
-      }
-    } catch (error) {
-      enqueueSnackbar('Error fetching linked inventory item', { variant: 'error' });
-      console.error('Error fetching linked inventory item: ', error);
-    }
-  };
-
-  const fetchSuggestedItem = async () => {
+  const fetchSuggestedItem = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('inventory_items')
@@ -78,7 +49,33 @@ const InventoryLinkDrawer = ({ openLinkDrawer, setOpenLinkDrawer, handleLinkDraw
       enqueueSnackbar('Error fetching suggested inventory item', { variant: 'error' });
       console.error('Error fetching suggested inventory item: ', error);
     }
-  };
+  }, [listing]);
+  
+  const fetchLinkedInventoryItem = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('listing_id', listing.id);
+  
+      if (error) throw new Error(error.message);
+      if (data.length > 0) {
+        setSelectedItem(data[0]);
+      } else {
+        fetchSuggestedItem();
+      }
+    } catch (error) {
+      enqueueSnackbar('Error fetching linked inventory item', { variant: 'error' });
+      console.error('Error fetching linked inventory item: ', error);
+    }
+  }, [listing.id, fetchSuggestedItem]); // Assuming listing.id is stable, or comes from props or state that does not change unexpectedly
+  
+  useEffect(() => {
+    if (listing) {
+      fetchUnlinkedInventoryItems();
+      fetchLinkedInventoryItem();
+    }
+  }, [listing, fetchUnlinkedInventoryItems, fetchLinkedInventoryItem]);
 
   const handleSave = async () => {
     if (selectedItem) {

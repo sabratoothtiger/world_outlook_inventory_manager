@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Drawer,
   Button,
@@ -32,13 +32,13 @@ const AddInventoryItem = ({
   const [models, setModels] = useState([]);
   const [fStops, setFStops] = useState([]);
   const [focalLengths, setFocalLengths] = useState([]);
+  const [focalLengthUnit, setFocalLengthUnit] = useState([]);
   const [focalLengthUnits, setFocalLengthUnits] = useState([]);
   const [statuses, setStatuses] = useState([]);
   const [openNewValueDialog, setOpenNewValueDialog] = useState(false);
   const [newFieldValue, setNewFieldValue] = useState("");
   const [newFieldValueLow, setNewFieldValueLow] = useState(""); // Added for low range
   const [newFieldValueHigh, setNewFieldValueHigh] = useState(""); // Added for high range
-  const [newFieldUnit, setNewFieldUnit] = useState(""); // Added for unit
   const [fieldToAdd, setFieldToAdd] = useState("");
   const [selectedBrand, setSelectedBrand] = useState(""); // State for selected brand
 
@@ -94,22 +94,6 @@ const AddInventoryItem = ({
     },
   ];
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    if (inventoryItem.category) {
-      fetchSubcategories(inventoryItem.category);
-    }
-  }, [inventoryItem.category]);
-
-  useEffect(() => {
-    if (inventoryItem.brand) {
-      fetchModels(inventoryItem.brand);
-    }
-  }, [inventoryItem.brand]);
-
   const findColumnNameByTable = (table) => {
     const fieldToCheck = fieldsToCheck.find(
       (fieldItem) => fieldItem.table === table
@@ -124,62 +108,85 @@ const AddInventoryItem = ({
     return fieldToCheck ? fieldToCheck.table : null;
   };
 
-  const fetchData = async () => {
-    const fetchOptions = async (table) => {
-      const columnName = findColumnNameByTable(table);
-      const res = await supabase
-        .from(table)
-        .select(columnName)
-        .order("id", { ascending: true });
-      return res.data.map((item) => item[columnName]);
-    };
+  const fetchOptions = async (table, columnName) => {
+    const res = await supabase
+      .from(table)
+      .select(columnName)
+      .order("id", { ascending: true });
+    return res.data ? res.data.map((item) => item[columnName]) : [];
+  };
 
+  const fetchData = useCallback(async () => {
     try {
-      setCategories(await fetchOptions("inventory_item_categories"));
-      setBrands(await fetchOptions("brands"));
-      setFStops(await fetchOptions("f_stops"));
-      setFocalLengths(await fetchOptions("focal_lengths"));
-      setStatuses(await fetchOptions("inventory_item_statuses"));
-      setFocalLengthUnits(await fetchOptions("focal_length_units"));
+      setCategories(
+        await fetchOptions("inventory_item_categories", "category")
+      );
+      setBrands(await fetchOptions("brands", "brand"));
+      setFStops(await fetchOptions("f_stops", "f_stop"));
+      setFocalLengths(await fetchOptions("focal_lengths", "focal_length"));
+      setStatuses(await fetchOptions("inventory_item_statuses", "status"));
+      setFocalLengthUnits(await fetchOptions("focal_length_units", "unit"));
     } catch (error) {
       console.error("Error fetching data:", error);
       enqueueSnackbar("Error fetching data: " + error, { variant: "error" });
     }
-  };
+  }, [enqueueSnackbar]); // Add any dependencies if they are used in fetchData
 
-  const fetchModels = async (brand) => {
-    try {
-      const res = await supabase
-        .from("models")
-        .select("model")
-        .eq("brand", brand)
-        .order("model", { ascending: true });
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-      setModels(res.data.map((item) => item.model));
-    } catch (error) {
-      console.error("Error fetching models:", error);
-      enqueueSnackbar("Error fetching models: " + error, {
-        variant: "error",
-      });
+  const fetchModels = useCallback(
+    async (brand) => {
+      try {
+        const res = await supabase
+          .from("models")
+          .select("model")
+          .eq("brand", brand)
+          .order("model", { ascending: true });
+
+        setModels(res.data.map((item) => item.model));
+      } catch (error) {
+        console.error("Error fetching models:", error);
+        enqueueSnackbar("Error fetching models: " + error, {
+          variant: "error",
+        });
+      }
+    },
+    [enqueueSnackbar]
+  );
+
+  useEffect(() => {
+    if (inventoryItem.brand) {
+      fetchModels(inventoryItem.brand);
     }
-  };
+  }, [inventoryItem.brand, fetchModels]);
 
-  const fetchSubcategories = async (category) => {
-    try {
-      const res = await supabase
-        .from("inventory_item_subcategories")
-        .select("subcategory")
-        .eq("category", category)
-        .order("id", { ascending: true });
+  const fetchSubcategories = useCallback(
+    async (category) => {
+      try {
+        const res = await supabase
+          .from("inventory_item_subcategories")
+          .select("subcategory")
+          .eq("category", category)
+          .order("id", { ascending: true });
 
-      setSubcategories(res.data.map((item) => item.subcategory));
-    } catch (error) {
-      console.error("Error fetching subcategories:", error);
-      enqueueSnackbar("Error fetching subcategories: " + error, {
-        variant: "error",
-      });
+        setSubcategories(res.data.map((item) => item.subcategory));
+      } catch (error) {
+        console.error("Error fetching subcategories:", error);
+        enqueueSnackbar("Error fetching subcategories: " + error, {
+          variant: "error",
+        });
+      }
+    },
+    [enqueueSnackbar]
+  );
+
+  useEffect(() => {
+    if (inventoryItem.category) {
+      fetchSubcategories(inventoryItem.category);
     }
-  };
+  }, [inventoryItem.category, fetchSubcategories]); // fetchSubcategories is now a dependency
 
   const filter = createFilterOptions();
 
@@ -270,17 +277,32 @@ const AddInventoryItem = ({
         variant: "success",
       });
       handleAddDrawerClose();
-      if (inventoryItem.status === 'Received (unlisted)' || inventoryItem.status === 'For parts') {
-        const barcode = 'INV^' + inventoryItem.id + '^' + inventoryItem.serial_number;
-        const labelData = [{
-          'Inventory ID': inventoryItem.id,
-          'Category': inventoryItem.category,
-          'Details': inventoryItem.brand + ' ' + inventoryItem.model + ' ' + inventoryItem.f_stop + ' ' + inventoryItem.focal_length + ' ' + inventoryItem.details,
-          'Serial Number': inventoryItem.serial_number,
-          'Inventory Barcode': barcode, 
-        }];
-        sendLabelsToPrinter(labelData, 'inventory')
-      };
+      if (
+        inventoryItem.status === "Received (unlisted)" ||
+        inventoryItem.status === "For parts"
+      ) {
+        const barcode =
+          "INV^" + inventoryItem.id + "^" + inventoryItem.serial_number;
+        const labelData = [
+          {
+            "Inventory ID": inventoryItem.id,
+            Category: inventoryItem.category,
+            Details:
+              inventoryItem.brand +
+              " " +
+              inventoryItem.model +
+              " " +
+              inventoryItem.f_stop +
+              " " +
+              inventoryItem.focal_length +
+              " " +
+              inventoryItem.details,
+            "Serial Number": inventoryItem.serial_number,
+            "Inventory Barcode": barcode,
+          },
+        ];
+        sendLabelsToPrinter(labelData, "inventory");
+      }
       setInventoryItem({
         status: "Received (unlisted)",
       });
@@ -336,7 +358,7 @@ const AddInventoryItem = ({
     setNewFieldValue(titlecase(value));
     setNewFieldValueLow(value.startsWith("1:") ? value.slice(2) : value);
     setNewFieldValueHigh("");
-    setNewFieldUnit("mm");
+    setFocalLengthUnit("mm");
     setOpenNewValueDialog(true);
   };
 
@@ -351,9 +373,13 @@ const AddInventoryItem = ({
       const columnName = findColumnNameByTable(table);
       const newValue =
         fieldToAdd === "fStop"
-          ? `1:${newFieldValueLow}-${newFieldValueHigh}`
+          ? newFieldValueHigh
+            ? `1:${newFieldValueLow}-${newFieldValueHigh}`
+            : `1:${newFieldValueLow}`
           : fieldToAdd === "focalLength"
-          ? `${newFieldValueLow}-${newFieldValueHigh} ${newFieldUnit}`
+          ? newFieldValueHigh
+            ? `${newFieldValueLow}-${newFieldValueHigh} ${focalLengthUnit}`
+            : `${newFieldValueLow} ${focalLengthUnit}`
           : newFieldValue;
 
       if (!existsInArray(table, newValue)) {
@@ -381,7 +407,7 @@ const AddInventoryItem = ({
               [columnName]: newValue,
               range_low: Number(newFieldValueLow),
               range_high: Number(newFieldValueHigh),
-              unit: newFieldUnit,
+              unit: focalLengthUnit,
             },
           ]);
           error = insertError;
@@ -506,11 +532,17 @@ const AddInventoryItem = ({
               />
             </Grid>
             <Grid item xs={4}>
-              <TextField
-                label="Unit"
-                value={newFieldUnit}
-                onChange={(e) => setNewFieldUnit(e.target.value)}
-                fullWidth
+              <Autocomplete
+                value={focalLengthUnit}
+                onChange={handleFieldChange("focalLength")}
+                options={focalLengthUnits}
+                renderInput={(params) => (
+                  <TextField {...params} label="Focal Length" fullWidth />
+                )}
+                freeSolo
+                selectOnFocus
+                clearOnBlur
+                handleHomeEndKeys
               />
             </Grid>
           </Grid>
