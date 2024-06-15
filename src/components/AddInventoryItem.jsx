@@ -9,9 +9,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  MenuItem,
-  Select,
-  FormControl,
 } from "@mui/material";
 import Autocomplete, { createFilterOptions } from "@mui/material/Autocomplete";
 import { supabase } from "../supabase";
@@ -257,7 +254,7 @@ const AddInventoryItem = ({
         },
       ]);
       if (error) throw new Error(error.message);
-      const { data, error: purchaseOrderError } = await supabase.rpc(
+      const { error: purchaseOrderError } = await supabase.rpc(
         "increment_item_count",
         { purchase_order_id: purchaseOrder.id }
       );
@@ -274,7 +271,7 @@ const AddInventoryItem = ({
       });
       handleAddDrawerClose();
       if (inventoryItem.status === 'Received (unlisted)' || inventoryItem.status === 'For parts') {
-        const barcode = 'INV' + '^' + inventoryItem.id + '^' + inventoryItem.serial_number;
+        const barcode = 'INV^' + inventoryItem.id + '^' + inventoryItem.serial_number;
         const labelData = [{
           'Inventory ID': inventoryItem.id,
           'Category': inventoryItem.category,

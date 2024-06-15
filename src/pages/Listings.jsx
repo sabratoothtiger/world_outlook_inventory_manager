@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { styled } from "@mui/material/styles";
-import Paper from "@mui/material/Paper";
 import Grid from "@mui/material/Grid";
 import { enqueueSnackbar } from "notistack";
 import {
@@ -32,14 +30,6 @@ import EditIcon from "@mui/icons-material/Edit";
 import PrintIcon from "@mui/icons-material/Print";
 import PublishedWithChangesIcon from "@mui/icons-material/PublishedWithChanges";
 import ExploreIcon from "@mui/icons-material/Explore";
-
-const Item = styled(Paper)(({ theme }) => ({
-  backgroundColor: theme.palette.mode === "dark" ? "#1A2027" : "#fff",
-  ...theme.typography.body2,
-  padding: theme.spacing(1),
-  textAlign: "left",
-  color: theme.palette.text.secondary,
-}));
 
 function CustomToolbar({
   selectedRows,
@@ -311,7 +301,7 @@ const Listings = () => {
       const labelData = [];
       for (const listingId of listingIds) {
         const listing = listings.find((listing) => listing.id === listingId);
-        const barcode = "LIS" + "^" + listing.id + "^" + listing.serial_number;
+        const barcode = "LIS^" + listing.id + "^" + listing.serial_number;
         const { title1, title2 } = parseTitleForLabel(listing.title);
         labelData.push({
           "Listing ID": listing.id,
