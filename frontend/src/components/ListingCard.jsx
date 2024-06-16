@@ -171,7 +171,7 @@ const ListingCard = ({ listing }) => {
           {listing.listing_date && formatListingInfo(listing)}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {listing.sold_date && formatSoldInfo(listing)}
+          {/* {listing.sold_date && formatSoldInfo(listing)} */}
         </Typography>
         <Typography variant="body2" color="text.secondary">
           <InventoryIcon fontSize="inherit" />{" "}
