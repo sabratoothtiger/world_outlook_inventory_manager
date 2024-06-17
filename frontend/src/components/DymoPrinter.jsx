@@ -53,14 +53,15 @@ const sendLabelsToPrinter = async (labelData, type) => {
 
 async function loadLabelTemplate(filename) {
     try {
-        const response = await axios.get(`${process.env.PUBLIC_URL}/assets/${filename}`, {
+        const response = await axios.get(`http://localhost:3000/assets/${filename}`, {
             headers: {
                 'Accept': 'application/xml'
-            }
+            },
+            responseType: 'blob'
         });
         return response.data;
     } catch (error) {
-        throw new Error('Failed to load the label file');
+        throw new Error('Failed to load the DYMO file');
     }
 }
 
