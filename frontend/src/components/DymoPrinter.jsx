@@ -1,4 +1,5 @@
 import { enqueueSnackbar } from 'notistack';
+import axios from 'axios';
 
 const initializeDymoLabelFramework = async () => {
     try {
@@ -38,13 +39,10 @@ const sendLabelsToPrinter = async (labelData, type) => {
             throw new Error('Invalid label type');
         }
         
-        // labelTemplateXml = await loadLabelTemplate(filename); // Useful if hosting on backend, but currently just serving through public react files.
-        labelTemplateXml = process.env.PUBLIC_URL + '/assets/' + filename;
-        console.log(labelTemplateXml)
+        labelTemplateXml = await loadLabelTemplate(filename);
+        labelTemplateXml = filename;
         const labelXml = await loadLabelFromXml(labelTemplateXml);
-        console.log(labelXml)
         const labelSetXml = window.dymo.label.framework.LabelSetBuilder.toXml(labelData);
-        console.log(labelData)
 
         await window.dymo.label.framework.printLabel(printerName, printParamsXml, labelXml, labelSetXml);
     } catch (error) {
@@ -53,15 +51,18 @@ const sendLabelsToPrinter = async (labelData, type) => {
     }
 };
 
-// Useful if hosting on backend, but currently just serving through public react files.
-/* async function loadLabelTemplate(filename) {
-    const response = await fetch(`http://localhost:5001/assets/${filename}`);
-    if (!response.ok) {
+async function loadLabelTemplate(filename) {
+    try {
+        const response = await axios.get(`${process.env.PUBLIC_URL}/assets/${filename}`, {
+            headers: {
+                'Accept': 'application/xml'
+            }
+        });
+        return response.data;
+    } catch (error) {
         throw new Error('Failed to load the label file');
     }
-    const labelXml = await response.text();
-    return labelXml;
-}; */
+}
 
 const loadLabelFromXml = async (xmlContent) => {
     try {
