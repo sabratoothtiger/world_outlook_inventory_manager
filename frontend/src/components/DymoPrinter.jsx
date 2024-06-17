@@ -40,8 +40,11 @@ const sendLabelsToPrinter = async (labelData, type) => {
         
         // labelTemplateXml = await loadLabelTemplate(filename); // Useful if hosting on backend, but currently just serving through public react files.
         labelTemplateXml = process.env.PUBLIC_URL + '/assets/' + filename;
+        console.log(labelTemplateXml)
         const labelXml = await loadLabelFromXml(labelTemplateXml);
+        console.log(labelXml)
         const labelSetXml = window.dymo.label.framework.LabelSetBuilder.toXml(labelData);
+        console.log(labelData)
 
         await window.dymo.label.framework.printLabel(printerName, printParamsXml, labelXml, labelSetXml);
     } catch (error) {
