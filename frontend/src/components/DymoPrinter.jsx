@@ -40,7 +40,6 @@ const sendLabelsToPrinter = async (labelData, type) => {
         }
         
         labelTemplateXml = await loadLabelTemplate(filename);
-        labelTemplateXml = filename;
         const labelXml = await loadLabelFromXml(labelTemplateXml);
         const labelSetXml = window.dymo.label.framework.LabelSetBuilder.toXml(labelData);
 
