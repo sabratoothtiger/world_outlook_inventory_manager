@@ -1,5 +1,6 @@
 import { enqueueSnackbar } from 'notistack';
 import axios from 'axios';
+import { listingLabel } from '../utils/listingLabel';
 
 const initializeDymoLabelFramework = async () => {
     try {
@@ -39,7 +40,7 @@ const sendLabelsToPrinter = async (labelData, type) => {
             throw new Error('Invalid label type');
         }
         
-        labelTemplateXml = await loadLabelTemplate(filename);
+        labelTemplateXml = listingLabel;
         const labelXml = await loadLabelFromXml(labelTemplateXml);
         const labelSetXml = window.dymo.label.framework.LabelSetBuilder.toXml(labelData);
 
