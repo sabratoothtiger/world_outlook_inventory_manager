@@ -28,10 +28,6 @@ const AddLinkFromListingDialog = ({ listingId, open, onClose, onSave }) => {
     setInventoryItems(data.map((inventoryItem) => inventoryItem.id));
   }
   const handleSave = () => {
-    if (!inventoryItemId) {
-      onClose();
-      return;
-    }
     onSave(listingId, inventoryItemId);
     onClose();
   };

@@ -1,6 +1,4 @@
 import { formatDate, formatFinancialData } from "../utils/dataFormatting";
-import { useEffect, useState } from 'react';
-import { supabase } from '../supabase';
 
 export function PurchaseOrderTableColumns() {
   const columns = [
@@ -133,30 +131,6 @@ export function POInventoryItemsTableColumns() {
 }
 
 export function ListingsTableColumns() {
-  const [inventoryLinked, setInventoryLinked] = useState({});
-
-  useEffect(() => {
-    async function fetchInventoryLinked() {
-      // Fetch the data from the inventory_items table and check if there are any matches
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .select('listing_id');
-      if (error) {
-        console.error('Error fetching inventory items:', error);
-        return;
-      }
-      // Extract the listing IDs from the data
-      const linkedListings = data.map((item) => item.listing_id);
-      // Update the state with the linked listings
-      setInventoryLinked(linkedListings.reduce((acc, val) => {
-        acc[val] = true;
-        return acc;
-      }, {}));
-    }
-
-    fetchInventoryLinked();
-  }, []);
-
   const columns = [
     {
       field: "id",
@@ -176,14 +150,10 @@ export function ListingsTableColumns() {
       maxWidth: 80,
     },
     {
-      field: 'linked_to_inventory',
+      field: 'is_linked',
       headerName: 'Linked?',
       flex: 1,
       maxWidth: 80,
-      renderCell: (params) => {
-        const listingID = params.row.id;
-        return inventoryLinked[listingID] ? 'Yes' : 'No';
-      },
     },
     {
       field: "status",

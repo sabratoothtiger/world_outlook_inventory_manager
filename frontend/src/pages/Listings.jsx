@@ -209,7 +209,7 @@ const Listings = () => {
                   .slice()
                   .reverse()
                   .map((listing) => (
-                    <ListingCard key={listing.id} listing={listing} />
+                    <ListingCard key={listing.id} listing={listing} updateListingById={updateListingById}/>
                   ))
               ) : (
                 <Typography>No listings available</Typography>
@@ -248,6 +248,19 @@ const Listings = () => {
   };
 
   const columns = ListingsTableColumns();
+
+  // Function to update a single listing by ID
+  const updateListingById = (updatedListing) => {
+    // Find the index of the listing to update
+    const index = listings.findIndex(listing => listing.id === updatedListing.id);
+    if (index !== -1) {
+      // Create a new array with the updated listing
+      const updatedListings = [...listings];
+      updatedListings[index] = updatedListing;
+      setListings(updatedListings);
+    }
+  };
+
 
   const handleOpenBulkStatusUpdateDialog = (listingIds) => {
     setSelectedListingIds(listingIds);
@@ -340,7 +353,7 @@ const Listings = () => {
         await supabase
           .from("listings")
           .update({
-            label_printed: "TRUE",
+            label_printed: true,
           })
           .eq("id", listingId);
       }

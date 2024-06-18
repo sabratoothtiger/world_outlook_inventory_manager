@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardMedia,
@@ -8,6 +8,7 @@ import {
   Button,
   Chip,
   Box,
+  Skeleton
 } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LinkIcon from "@mui/icons-material/Link";
@@ -50,7 +51,7 @@ const formatSoldInfo = (listing) => {
 };
 
 const handleListingUrlButtonClick = (listing) => {
-  window.open(listing.listing_url, "_blank");
+  window.open(listing.listing_url, "_blank", "noopener");
 };
 
 const formatListingInfo = (listing) => {
@@ -83,6 +84,19 @@ const formatListingInfo = (listing) => {
   );
 };
 
+const formatInventoryItem = (inventoryItem) => {
+  const inventoryItemFormatted = inventoryItem.id ? (
+      inventoryItem.id + " (SN: " + inventoryItem.serial_number + ")"
+  ) :  "No inventory item linked";
+
+  return (
+    <>
+      <InventoryIcon fontSize="inherit" />{" "}
+      {inventoryItemFormatted}
+    </>
+  );
+};
+
 const listingStatusChip = (listingStatus) => {
   switch (listingStatus) {
     case "Active":
@@ -101,15 +115,13 @@ const listingStatusChip = (listingStatus) => {
 };
 
 // Listing Card
-const ListingCard = ({ listing }) => {
+const ListingCard = ({ listing, updateListingById }) => {
   const [inventoryItem, setInventoryItem] = useState(null);
   const [openLinkDrawer, setOpenLinkDrawer] = useState(false);
+  const [loadingInventoryItem, setLoadingInventoryItem] = useState(true);
 
-  useEffect(() => {
-    fetchInventoryItem(listing);
-  }, [listing]);
-
-  async function fetchInventoryItem(listing) {
+  const fetchInventoryItem = useCallback(async () => {
+    setLoadingInventoryItem(true)
     try {
       const { data, error } = await supabase
         .from("inventory_items")
@@ -120,8 +132,14 @@ const ListingCard = ({ listing }) => {
     } catch (error) {
       enqueueSnackbar("Oops! Something went wrong.", { variant: "error" });
       console.error("Error fetching data: ", error);
+    } finally {
+      setLoadingInventoryItem(false)
     }
-  }
+  }, [listing.id]);
+
+  useEffect(() => {
+    fetchInventoryItem();
+  }, [fetchInventoryItem]);
 
   const handleLinkClick = () => {
     setOpenLinkDrawer(true);
@@ -130,10 +148,6 @@ const ListingCard = ({ listing }) => {
   const handleLinkDrawerClose = () => {
     setOpenLinkDrawer(false);
   };
-
-  //on link dialog, display current link (if exists) in dropdown and show info about the item
-  //show recommended (based on serial number)?
-  //allow selection from dropdown for any non-linked inventory item
 
   return (
     <Card sx={{ maxWidth: 345 }}>
@@ -168,17 +182,20 @@ const ListingCard = ({ listing }) => {
           <b>{listing.title}</b>
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {listing.listing_date && formatListingInfo(listing)}
+        {loadingInventoryItem ? (<Skeleton />)
+          : (listing.listing_date && formatListingInfo(listing))
+        }
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {/* {listing.sold_date && formatSoldInfo(listing)} */}
+        {loadingInventoryItem ? (<Skeleton />)
+          : (listing.sold_date && formatSoldInfo(listing))
+        }
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          <InventoryIcon fontSize="inherit" />{" "}
-          {inventoryItem
-            ? inventoryItem.id + " (SN: " + inventoryItem.serial_number + ")"
-            : "No inventory item linked"}
-        </Typography>{" "}
+          {loadingInventoryItem ? (<Skeleton />)
+          : (formatInventoryItem(inventoryItem))
+          }
+        </Typography>
       </CardContent>
       <CardActions
         sx={{
@@ -189,20 +206,21 @@ const ListingCard = ({ listing }) => {
       >
         <Button size="small" onClick={handleLinkClick}>
           <LinkIcon />
-        </Button>{" "}
+        </Button>
         <InventoryLinkDrawer
           openLinkDrawer={openLinkDrawer}
           handleLinkDrawerClose={handleLinkDrawerClose}
           listing={listing}
+          setInventoryItem={setInventoryItem}
+          updateListingById={updateListingById}
         />
-        <Button size="small">
+        <Button size="small" disabled>
           <HistoryIcon />
-        </Button>{" "}
-        {/* Drawer from left with history? */}
-        <Button size="small">
+        </Button>
+        <Button size="small" disabled>
           <EditIcon />
         </Button>
-        <Button size="small" onClick={handleListingUrlButtonClick}>
+        <Button size="small" onClick={() => handleListingUrlButtonClick(listing)} disabled={!listing.listing_url}>
           <OpenInNewIcon />
         </Button>
       </CardActions>

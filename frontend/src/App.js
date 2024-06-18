@@ -37,7 +37,7 @@ function App() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <SnackbarProvider>
+      <SnackbarProvider anchorOrigin={{ vertical: "bottom", horizontal: "center" }} autoHideDuration={3000}>
         <Router>
           <Routes>
             <Route path="/signin" element={<SignIn onSignIn={handleSignIn} />} />
