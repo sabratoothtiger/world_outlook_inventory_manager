@@ -115,5 +115,13 @@ def fetch_ebay_listings():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
+@app.route('/api/fetch_goodwill_purchase_orders', methods=['GET', 'POST'])
+def fetch_goodwill_purchase_orders():
+    url = 'https://buyerapi.shopgoodwill.com/api/ShippedOrders/ExportAllCSV'
+    token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkYzllMDU0MC03ZTc5LTQ2MzEtYTQ5Yi04ZTU0YmVhMWEwYTYiLCJCdXllcklkIjoiNDA3Njc2NCIsIk1pZGRsZUluaXRpYWwiOiIiLCJJcEFkZHJlc3MiOiI3NS4xMDAuMC42NyIsIkJyb3dzZXIiOiJjaHJvbWUiLCJNb2JSZWdpc3RyYXRpb25Ub2tlbiI6IiIsIk1vYkFwcFBsYXRmb3JtIjoiIiwiTW9iQXBwVmVyc2lvbiI6IiIsIk1vYkJyYW5kIjoiIiwiTW9iTW9kZWwiOiIiLCJCdXllclNlc3Npb24iOiJkYzllMDU0MC03ZTc5LTQ2MzEtYTQ5Yi04ZTU0YmVhMWEwYTYiLCJleHAiOjE3MjEzMTc5NDAsImlzcyI6Imh0dHBzOi8vYnV5ZXJwcm9kbXZjLm9jZ29vZHdpbGwtdGVjaHNlcnZpY2VzLm9yZy8iLCJhdWQiOiJodHRwczovL2J1eWVycHJvZG12Yy5vY2dvb2R3aWxsLXRlY2hzZXJ2aWNlcy5vcmcvIn0.9OZm16n0Pi4m_bLLkJn_DAzOx4s9250FqMPioMgBpbY'
+    method = 'POST'
+
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
