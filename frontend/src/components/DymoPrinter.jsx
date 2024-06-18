@@ -52,7 +52,7 @@ const sendLabelsToPrinter = async (labelData, type) => {
 
 async function loadLabelTemplate(filename) {
     try {
-        const response = await axios.get(`${REACT_APP_API_URL}${filename}`, {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}${filename}`, {
             headers: {
                 'Accept': 'application/xml'
             },
