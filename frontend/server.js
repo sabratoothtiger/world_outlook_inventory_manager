@@ -1,6 +1,10 @@
 const express = require('express');
 const path = require('path');
+const cors = require('cors');
 const app = express();
+
+// Enable CORS for all routes
+app.use(cors());
 
 // Middleware to serve static files
 app.use('/assets', express.static(path.join(__dirname, 'public/assets'), {
