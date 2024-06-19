@@ -144,6 +144,11 @@ export function ListingsTableColumns() {
       flex: 1,
     },
     {
+      field: "serial_number",
+      headerName: "Serial Number",
+      flex: 1,
+    },
+    {
       field: "label_printed",
       headerName: "Printed?",
       flex: 1,
