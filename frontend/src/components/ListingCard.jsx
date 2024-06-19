@@ -8,7 +8,7 @@ import {
   Button,
   Chip,
   Box,
-  Skeleton
+  Skeleton,
 } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LinkIcon from "@mui/icons-material/Link";
@@ -85,14 +85,13 @@ const formatListingInfo = (listing) => {
 };
 
 const formatInventoryItem = (inventoryItem) => {
-  const inventoryItemFormatted = inventoryItem.id ? (
-      inventoryItem.id + " (SN: " + inventoryItem.serial_number + ")"
-  ) :  "No inventory item linked";
+  const inventoryItemFormatted = inventoryItem.id
+    ? inventoryItem.id + " (SN: " + inventoryItem.serial_number + ")"
+    : "No inventory item linked";
 
   return (
     <>
-      <InventoryIcon fontSize="inherit" />{" "}
-      {inventoryItemFormatted}
+      <InventoryIcon fontSize="inherit" /> {inventoryItemFormatted}
     </>
   );
 };
@@ -121,7 +120,7 @@ const ListingCard = ({ listing, updateListingById }) => {
   const [loadingInventoryItem, setLoadingInventoryItem] = useState(true);
 
   const fetchInventoryItem = useCallback(async () => {
-    setLoadingInventoryItem(true)
+    setLoadingInventoryItem(true);
     try {
       const { data, error } = await supabase
         .from("inventory_items")
@@ -133,7 +132,7 @@ const ListingCard = ({ listing, updateListingById }) => {
       enqueueSnackbar("Oops! Something went wrong.", { variant: "error" });
       console.error("Error fetching data: ", error);
     } finally {
-      setLoadingInventoryItem(false)
+      setLoadingInventoryItem(false);
     }
   }, [listing.id]);
 
@@ -182,19 +181,27 @@ const ListingCard = ({ listing, updateListingById }) => {
           <b>{listing.title}</b>
         </Typography>
         <Typography variant="body2" color="text.secondary">
-        {loadingInventoryItem ? (<Skeleton />)
-          : (listing.listing_date && formatListingInfo(listing))
-        }
+          {loadingInventoryItem ? (
+            <Skeleton />
+          ) : (
+            listing.listing_date && formatListingInfo(listing)
+          )}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-        {loadingInventoryItem ? (<Skeleton />)
-          : (listing.sold_date && formatSoldInfo(listing))
-        }
+          {loadingInventoryItem ? (
+            <Skeleton />
+          ) : (
+            listing.sold_date && formatSoldInfo(listing)
+          )}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {loadingInventoryItem ? (<Skeleton />)
-          : (formatInventoryItem(inventoryItem))
-          }
+          {loadingInventoryItem ? (
+            <Skeleton />
+          ) : (
+            inventoryItem
+            ? formatInventoryItem(inventoryItem)
+            : "No inventory item linked"
+          )}
         </Typography>
       </CardContent>
       <CardActions
@@ -220,7 +227,11 @@ const ListingCard = ({ listing, updateListingById }) => {
         <Button size="small" disabled>
           <EditIcon />
         </Button>
-        <Button size="small" onClick={() => handleListingUrlButtonClick(listing)} disabled={!listing.listing_url}>
+        <Button
+          size="small"
+          onClick={() => handleListingUrlButtonClick(listing)}
+          disabled={!listing.listing_url}
+        >
           <OpenInNewIcon />
         </Button>
       </CardActions>
