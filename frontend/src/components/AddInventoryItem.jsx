@@ -223,6 +223,24 @@ const AddInventoryItem = ({
         }
       }
 
+      // Step 0: Get Model ID
+      const { data: existingModel, error: fetchModelError } = await supabase
+      .from("models")
+      .select("id")
+      .eq("brand", inventoryItem.brand)
+      .eq("model", inventoryItem.model)
+      .single();
+
+      if (fetchModelError && fetchModelError.code !== 'PGRST116') {
+        throw fetchModelError;
+      }
+
+      let modelId;
+
+      if (existingModel) {
+        modelId = existingModel.id;
+      }
+
       // Step 1: Fetch the maximum number
       const { data: maxNumberData, error: maxNumberError } = await supabase
         .from("inventory_items")
@@ -251,7 +269,7 @@ const AddInventoryItem = ({
           category: inventoryItem.category,
           subcategory: inventoryItem.subcategory,
           brand: inventoryItem.brand,
-          model: inventoryItem.model,
+          model_id: modelId,
           f_stop: inventoryItem.fStop,
           focal_length: inventoryItem.focalLength,
           details: inventoryItem.details,
