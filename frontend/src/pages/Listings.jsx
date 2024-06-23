@@ -173,7 +173,7 @@ const Listings = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        "http://127.0.0.1:5001/api/fetch_ebay_listings"
+        "https://127.0.0.1:5001/api/fetch_ebay_listings"
       );
       const data = await response.json();
       if (data.status === "success") {
