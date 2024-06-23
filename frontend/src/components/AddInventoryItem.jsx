@@ -299,22 +299,22 @@ const AddInventoryItem = ({
         inventoryItem.status === "Received (unlisted)" ||
         inventoryItem.status === "For parts"
       ) {
+        const detailsParts = [
+          inventoryItem.brand,
+          inventoryItem.model,
+          inventoryItem.f_stop,
+          inventoryItem.focal_length,
+          inventoryItem.details,
+        ];
+        const detailsString = detailsParts.filter(part => part).join(" ");
+
         const barcode =
           "INV^" + inventoryItem.id + "^" + inventoryItem.serial_number;
         const labelData = [
           {
             "Inventory ID": inventoryItem.id,
-            Category: inventoryItem.category,
-            Details:
-              inventoryItem.brand +
-              " " +
-              inventoryItem.model +
-              " " +
-              inventoryItem.f_stop +
-              " " +
-              inventoryItem.focal_length +
-              " " +
-              inventoryItem.details,
+            "Category": inventoryItem.category,
+            "Details": detailsString,
             "Serial Number": inventoryItem.serial_number,
             "Inventory Barcode": barcode,
           },

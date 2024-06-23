@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { DataGrid, GridActionsCellItem, GridToolbarQuickFilter } from '@mui/x-data-grid';
 import EditIcon from '@mui/icons-material/Edit';
 import PrintIcon from '@mui/icons-material/Print';
@@ -52,15 +52,49 @@ const PurchaseOrderInventoryItemsTable = ({ purchaseOrder, inventoryItems, setIn
     setInventoryItems(data)
   }
 
+  const [modelsLookup, setModelsLookup] = useState({});
+
+  const fetchModelsLookup = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("models")
+        .select("id, model");
+  
+      if (error) throw error;
+  
+      const lookup = data.reduce((acc, model) => {
+        acc[model.id] = model.model;
+        return acc;
+      }, {});
+  
+      setModelsLookup(lookup);
+    } catch (error) {
+      console.error("Error fetching models lookup:", error);
+      enqueueSnackbar("Error fetching models lookup: " + error.message, { variant: "error" });
+    }
+  }, [enqueueSnackbar]);
+  
+  useEffect(() => {
+    fetchModelsLookup();
+  }, [fetchModelsLookup]);
+
   const handlePrintClick = (itemId) => async () => {
     try {
       const item = inventoryItems.find((item) => item.id === itemId);
-      console.log('Item: ', item)
+      const modelName = modelsLookup[item.model_id] || "";
+      const detailsParts = [
+        item.brand,
+        modelName,
+        item.f_stop,
+        item.focal_length,
+        item.details,
+      ];
+      const detailsString = detailsParts.filter(part => part).join(" ");
       const barcode = 'INV^' + item.id + '^' + item.serial_number;
       const labelData = [{
         'Inventory ID': item.id,
         'Category': item.category,
-        'Details': item.brand + ' ' + item.model + ' ' + item.f_stop + ' ' + item.focal_length + ' ' + item.details,
+        'Details': detailsString,
         'Serial Number': item.serial_number,
         'Inventory Barcode': barcode, 
       }];

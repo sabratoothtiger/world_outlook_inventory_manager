@@ -1,4 +1,7 @@
 import { formatDate, formatFinancialData } from "../utils/dataFormatting";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "../supabase";
+import { useSnackbar } from "notistack";
 
 export function PurchaseOrderTableColumns() {
   const columns = [
@@ -61,6 +64,33 @@ export function PurchaseOrderTableColumns() {
 }
 
 export function POInventoryItemsTableColumns() {
+  const [modelsLookup, setModelsLookup] = useState({});
+  const { enqueueSnackbar } = useSnackbar();
+
+  const fetchModelsLookup = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("models")
+        .select("id, model");
+  
+      if (error) throw error;
+  
+      const lookup = data.reduce((acc, model) => {
+        acc[model.id] = model.model;
+        return acc;
+      }, {});
+  
+      setModelsLookup(lookup);
+    } catch (error) {
+      console.error("Error fetching models lookup:", error);
+      enqueueSnackbar("Error fetching models lookup: " + error.message, { variant: "error" });
+    }
+  }, [enqueueSnackbar]);
+  
+  useEffect(() => {
+    fetchModelsLookup();
+  }, [fetchModelsLookup]);
+
   const columns = [
     {
       field: "id",
@@ -91,11 +121,11 @@ export function POInventoryItemsTableColumns() {
       editable: false,
     },
     {
-      field: "model",
+      field: "model_id",
       headerName: "Model",
-      type: "singleSelect",
       width: 80,
       editable: false,
+      valueFormatter: (params) => modelsLookup[params.value] || "",
     },
     {
       field: "f_stop",
@@ -108,6 +138,12 @@ export function POInventoryItemsTableColumns() {
       field: "focal_length",
       headerName: "Focal Length",
       type: "singleSelect",
+      width: 80,
+      editable: false,
+    },
+    {
+      field: "serial_number",
+      headerName: "SN",
       width: 80,
       editable: false,
     },
