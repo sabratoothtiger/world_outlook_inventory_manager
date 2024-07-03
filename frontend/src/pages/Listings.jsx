@@ -172,8 +172,9 @@ const Listings = () => {
   const handlePullFromEbay = async () => {
     setLoading(true);
     try {
+      const url = process.env.REACT_APP_API_URL + "/api/fetch_ebay_listings"
       const response = await fetch(
-        "https://127.0.0.1:5001/api/fetch_ebay_listings"
+        url
       );
       const data = await response.json();
       if (data.status === "success") {
