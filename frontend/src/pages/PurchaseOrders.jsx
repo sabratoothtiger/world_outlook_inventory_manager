@@ -75,8 +75,24 @@ export default function PurchaseOrdersPage() {
     setAnchorEl(null);
   };
 
-  const handlePullFromGoodwill = () => {
-    // Logic to pull data from Goodwill
+  const handlePullFromGoodwill = async () => {
+    setLoading(true);
+    try {
+      const url = process.env.REACT_APP_API_URL + "/api/fetch_goodwill_purchase_orders"
+      const response = await fetch(
+        url
+      );
+      const data = await response.json();
+      if (data.status === "success") {
+        console.log("Purchase orders fetched successfully");
+        fetchPurchaseOrders();
+      } else {
+        console.error("Error fetching listings:", data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching listings:", error);
+    }
+    setLoading(false);
     handleMenuClose();
   };
 
