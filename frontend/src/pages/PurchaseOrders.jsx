@@ -9,7 +9,7 @@ import {
     Menu,
     MenuItem,
   } from "@mui/material";
-  import { DataGrid, GridToolbarQuickFilter } from "@mui/x-data-grid";
+  import { DataGrid, GridLogicOperator, GridToolbarQuickFilter } from "@mui/x-data-grid";
   import { useNavigate } from "react-router-dom";
   import { PurchaseOrderTableColumns } from "../components/TableColumns";
   import AddPurchaseOrder from "../components/AddPurchaseOrder";
@@ -46,7 +46,7 @@ export default function PurchaseOrdersPage() {
 
   async function fetchPurchaseOrders() {
     setLoading(true);
-    const { data } = await supabase.from("purchase_orders").select("*");
+    const { data } = await supabase.from("purchase_orders").select("*").order('order_date', { ascending: false });
     setPurchaseOrders(data);
     setLoading(false);
   }
@@ -155,8 +155,21 @@ export default function PurchaseOrdersPage() {
               loading={loading}
               pageSizeOptions={[25, 50, 100]}
               initialState={{
-                pagination: {
-                  pageSize: 25,
+                 pagination: { 
+                  paginationModel: {
+                    pageSize: 25,
+                  }
+                },
+                filter: {
+                  filterModel: {
+                    items: [
+                      {
+                        field: 'status', // The column field to filter
+                        operator: 'isAnyOf', // The operator to use
+                        value: ['Shipped', 'Ordered'], // The value to match
+                      },
+                    ],
+                  },
                 },
               }}
               components={{ Toolbar: CustomToolbar }}
