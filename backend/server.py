@@ -6,6 +6,7 @@ from datetime import datetime
 import re
 from supabase import create_client
 from flask_cors import CORS
+from goodwill_pull import pull_new_purchase_orders_from_goodwill
 """ 
 from dotenv import load_dotenv
 
@@ -17,9 +18,14 @@ app = Flask(__name__)
 CORS(app, origins='*')
 
 # Initialize Supabase
-supabase_url = os.environ.get('SUPABASE_URL')
-supabase_key = os.environ.get('SUPABASE_KEY')
-supabase = create_client(supabase_url, supabase_key)
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Initialize Goodwill
+GOODWILL_TOKEN = os.environ.get('GOODWILL_TOKEN')
+
+
 
 def parse_serial_number_from_title(title):
     if '#' in title:
@@ -123,10 +129,8 @@ def fetch_ebay_listings():
 
 @app.route('/api/fetch_goodwill_purchase_orders', methods=['GET', 'POST'])
 def fetch_goodwill_purchase_orders():
-    url = 'https://buyerapi.shopgoodwill.com/api/ShippedOrders/ExportAllCSV'
-    token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkYzllMDU0MC03ZTc5LTQ2MzEtYTQ5Yi04ZTU0YmVhMWEwYTYiLCJCdXllcklkIjoiNDA3Njc2NCIsIk1pZGRsZUluaXRpYWwiOiIiLCJJcEFkZHJlc3MiOiI3NS4xMDAuMC42NyIsIkJyb3dzZXIiOiJjaHJvbWUiLCJNb2JSZWdpc3RyYXRpb25Ub2tlbiI6IiIsIk1vYkFwcFBsYXRmb3JtIjoiIiwiTW9iQXBwVmVyc2lvbiI6IiIsIk1vYkJyYW5kIjoiIiwiTW9iTW9kZWwiOiIiLCJCdXllclNlc3Npb24iOiJkYzllMDU0MC03ZTc5LTQ2MzEtYTQ5Yi04ZTU0YmVhMWEwYTYiLCJleHAiOjE3MjEzMTc5NDAsImlzcyI6Imh0dHBzOi8vYnV5ZXJwcm9kbXZjLm9jZ29vZHdpbGwtdGVjaHNlcnZpY2VzLm9yZy8iLCJhdWQiOiJodHRwczovL2J1eWVycHJvZG12Yy5vY2dvb2R3aWxsLXRlY2hzZXJ2aWNlcy5vcmcvIn0.9OZm16n0Pi4m_bLLkJn_DAzOx4s9250FqMPioMgBpbY'
-    method = 'POST'
-
+    pull_new_purchase_orders_from_goodwill()
+    return jsonify({'status': 'success'})
 
 
 if __name__ == '__main__':
