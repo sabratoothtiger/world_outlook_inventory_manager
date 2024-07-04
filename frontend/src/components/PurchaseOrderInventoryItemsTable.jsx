@@ -95,12 +95,16 @@ const PurchaseOrderInventoryItemsTable = ({ purchaseOrder, inventoryItems, setIn
         item.details,
       ];
       const detailsString = detailsParts.filter(part => part).join(" ");
-      const barcode = 'INV^' + item.id + '^' + item.serial_number;
+      let serial_number = ""
+      if (item.serial_number) {
+        serial_number = item.serial_number
+      }
+      const barcode = 'INV^' + item.id + '^' + serial_number;
       const labelData = [{
         'Inventory ID': item.id,
-        'Category': item.category,
+        'Category': item.category + " " + item.subcategory,
         'Details': detailsString,
-        'Serial Number': item.serial_number,
+        'Serial Number': "#"+serial_number,
         'Inventory Barcode': barcode, 
       }];
       await sendLabelsToPrinter(labelData, 'inventory');

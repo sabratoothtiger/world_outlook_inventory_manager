@@ -302,8 +302,8 @@ const AddInventoryItem = ({
         const detailsParts = [
           inventoryItem.brand,
           inventoryItem.model,
-          inventoryItem.f_stop,
-          inventoryItem.focal_length,
+          inventoryItem.fStop,
+          inventoryItem.focalLength,
           inventoryItem.details,
         ];
         const detailsString = detailsParts.filter(part => part).join(" ");
@@ -323,7 +323,7 @@ const AddInventoryItem = ({
             "Inventory ID": inventoryItemId,
             "Category": inventoryItem.category + " " + inventoryItem.subcategory,
             "Details": detailsString,
-            "Serial Number": serial_number,
+            "Serial Number": "#" + serial_number,
             "Inventory Barcode": barcode,
           },
         ];
