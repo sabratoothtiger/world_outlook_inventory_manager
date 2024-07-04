@@ -33,7 +33,7 @@ function CustomToolbar({ handleAddInventoryClick}) {
   );
 }
 
-const PurchaseOrderInventoryItemsTable = ({ purchaseOrder, inventoryItems, setInventoryItems, setPurchaseOrder }) => {
+const PurchaseOrderInventoryItemsTable = ({ purchaseOrder, inventoryItems, setInventoryItems, onInventoryItemsChange }) => {
   const [openDialog, setOpenDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -73,10 +73,13 @@ const PurchaseOrderInventoryItemsTable = ({ purchaseOrder, inventoryItems, setIn
       enqueueSnackbar("Error fetching models lookup: " + error.message, { variant: "error" });
     }
   }, [enqueueSnackbar]);
-  
+
   useEffect(() => {
     fetchModelsLookup();
-  }, [fetchModelsLookup]);
+    if (onInventoryItemsChange) {
+      onInventoryItemsChange();
+    }
+  }, [fetchModelsLookup, inventoryItems, onInventoryItemsChange]);
 
   const handlePrintClick = (itemId) => async () => {
     try {
@@ -138,10 +141,13 @@ const PurchaseOrderInventoryItemsTable = ({ purchaseOrder, inventoryItems, setIn
           .delete()
           .eq('id', itemToDelete);
 
-          await supabase
-      .from('inventory_item_histories')
-      .delete() 
-      .eq('inventory_item_id', itemToDelete)
+        await supabase
+          .from('inventory_item_histories')
+          .delete() 
+          .eq('inventory_item_id', itemToDelete)
+       
+        // Update purchase order item count
+        await supabase.rpc('decrement_item_count', { purchase_order_id: purchaseOrder.id });
 
         enqueueSnackbar('Item deleted successfully.', { variant: 'success' });
 
@@ -228,7 +234,6 @@ const PurchaseOrderInventoryItemsTable = ({ purchaseOrder, inventoryItems, setIn
             openAddDrawer={openAddDrawer}
             handleAddDrawerClose={handleAddDrawerClose}
             fetchInventoryItem={fetchInventoryItems}
-            setPurchaseOrder={setPurchaseOrder}
           />
     </div>
   );

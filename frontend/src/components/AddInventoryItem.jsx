@@ -224,21 +224,21 @@ const AddInventoryItem = ({
       }
 
       // Step 0: Get Model ID
-      const { data: existingModel, error: fetchModelError } = await supabase
-      .from("models")
-      .select("id")
-      .eq("brand", inventoryItem.brand)
-      .eq("model", inventoryItem.model)
-      .single();
+      let modelId = null
+      if (inventoryItem.model) {
+        const { data: existingModel, error: fetchModelError } = await supabase
+        .from("models")
+        .select("id")
+        .eq("brand", inventoryItem.brand)
+        .eq("model", inventoryItem.model)
+        .single();
 
-      if (fetchModelError && fetchModelError.code !== 'PGRST116') {
-        throw fetchModelError;
-      }
-
-      let modelId;
-
-      if (existingModel) {
-        modelId = existingModel.id;
+        if (fetchModelError && fetchModelError.code !== 'PGRST116') {
+          throw fetchModelError;
+        }
+        if (existingModel) {
+          modelId = existingModel.id;
+        }
       }
 
       // Step 1: Fetch the maximum number
@@ -307,15 +307,23 @@ const AddInventoryItem = ({
           inventoryItem.details,
         ];
         const detailsString = detailsParts.filter(part => part).join(" ");
-
-        const barcode =
-          "INV^" + inventoryItem.id + "^" + inventoryItem.serial_number;
+        
+        let serial_number = ""
+        if (inventoryItem.serial_number) {
+          serial_number = inventoryItem.serial_number
+        }
+        const barcodeParts = [
+          "INV",
+          inventoryItemId,
+          serial_number
+        ]
+        const barcode = barcodeParts.join("^")
         const labelData = [
           {
-            "Inventory ID": inventoryItem.id,
+            "Inventory ID": inventoryItemId,
             "Category": inventoryItem.category,
             "Details": detailsString,
-            "Serial Number": inventoryItem.serial_number,
+            "Serial Number": serial_number,
             "Inventory Barcode": barcode,
           },
         ];

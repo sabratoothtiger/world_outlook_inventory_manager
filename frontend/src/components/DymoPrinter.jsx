@@ -38,7 +38,7 @@ const sendLabelsToPrinter = async (labelData, type) => {
     } else {
       throw new Error("Invalid label type");
     }
-
+    
     const labelXml = await loadLabelFromXml(labelTemplateXml);
     const labelSetXml =
       window.dymo.label.framework.LabelSetBuilder.toXml(labelData);

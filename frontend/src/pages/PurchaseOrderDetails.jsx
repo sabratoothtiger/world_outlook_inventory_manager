@@ -72,6 +72,10 @@ export default function PurchaseOrderDetails() {
     }
   };
 
+  const handleInventoryItemsUpdate = () => {
+    fetchPurchaseOrder();
+  };
+
   return (
     <Box sx={{ padding: 2 }}>
       <Breadcrumbs aria-label="breadcrumb">
@@ -173,6 +177,7 @@ export default function PurchaseOrderDetails() {
           purchaseOrder={purchaseOrder}
           inventoryItems={inventoryItems}
           setInventoryItems={setInventoryItems}
+          onInventoryItemsChange={handleInventoryItemsUpdate}
         />
       </Box>
     </Box>

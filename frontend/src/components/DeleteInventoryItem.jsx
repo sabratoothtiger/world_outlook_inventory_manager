@@ -39,7 +39,7 @@ const DeleteInventoryItem = ({ purchaseOrderId, inventoryItemId, fetchInventoryI
       if (error) throw new Error(error.message);
       
       // Update purchase order item count
-        const { error: purchaseOrderError } = await supabase
+      const { error: purchaseOrderError } = await supabase
       .rpc('decrement_item_count', { purchase_order_id: purchaseOrderId });
 
       if (purchaseOrderError) throw new Error(purchaseOrderError.message);
@@ -85,4 +85,4 @@ const DeleteInventoryItem = ({ purchaseOrderId, inventoryItemId, fetchInventoryI
   );
 };
 
-export default DeletePurchaseOrder;
+export default DeleteInventoryItem;
