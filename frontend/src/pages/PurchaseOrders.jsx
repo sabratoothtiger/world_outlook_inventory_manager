@@ -9,7 +9,7 @@ import {
     Menu,
     MenuItem,
   } from "@mui/material";
-  import { DataGrid, GridLogicOperator, GridToolbarQuickFilter } from "@mui/x-data-grid";
+  import { DataGrid, GridToolbarQuickFilter } from "@mui/x-data-grid";
   import { useNavigate } from "react-router-dom";
   import { PurchaseOrderTableColumns } from "../components/TableColumns";
   import AddPurchaseOrder from "../components/AddPurchaseOrder";
