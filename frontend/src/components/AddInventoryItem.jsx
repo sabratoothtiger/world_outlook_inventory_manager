@@ -366,9 +366,6 @@ const AddInventoryItem = ({
         return;
       }
       setInventoryItem({ ...inventoryItem, [field]: newValue });
-      if (field === "brand") {
-        setSelectedBrand(newValue); // Update selected brand state
-      }
     } else if (newValue && newValue.inputValue) {
       handleAddNewValue(field, newValue.inputValue);
     } else {
@@ -407,7 +404,9 @@ const AddInventoryItem = ({
             ? `${newFieldValueLow}-${newFieldValueHigh} ${focalLengthUnit}`
             : `${newFieldValueLow} ${focalLengthUnit}`
           : newFieldValue;
-
+      if (fieldToAdd === "brand") {
+        setSelectedBrand(newValue)
+      }
       if (!existsInArray(table, newValue)) {
         var error = null;
         if (fieldToAdd === "model") {
