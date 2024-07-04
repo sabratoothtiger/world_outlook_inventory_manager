@@ -321,7 +321,7 @@ const AddInventoryItem = ({
         const labelData = [
           {
             "Inventory ID": inventoryItemId,
-            "Category": inventoryItem.category,
+            "Category": inventoryItem.category + inventoryItem.subcategory,
             "Details": detailsString,
             "Serial Number": serial_number,
             "Inventory Barcode": barcode,
