@@ -112,5 +112,3 @@ def pull_new_purchase_orders_from_goodwill():
     orders = parse_order_data(recent_orders_csv)
     existing_order_ids = fetch_existing_order_ids()
     insert_to_supabase(orders, existing_order_ids)
-
-pull_new_purchase_orders_from_goodwill()
