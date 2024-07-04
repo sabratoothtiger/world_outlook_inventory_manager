@@ -76,9 +76,11 @@ const PurchaseOrderInventoryItemsTable = ({ purchaseOrder, inventoryItems, setIn
 
   useEffect(() => {
     fetchModelsLookup();
+    /*
     if (onInventoryItemsChange) {
       onInventoryItemsChange();
     }
+    */
   }, [fetchModelsLookup, inventoryItems, onInventoryItemsChange]);
 
   const handlePrintClick = (itemId) => async () => {
