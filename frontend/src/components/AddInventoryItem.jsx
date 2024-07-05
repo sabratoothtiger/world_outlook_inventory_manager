@@ -362,16 +362,20 @@ const AddInventoryItem = ({
   const handleFieldChange = (field) => (event, newValue) => {
     if (typeof newValue === "string") {
       if (newValue.startsWith('Add "')) {
-        handleAddNewValue(field, newValue.substring(5, newValue.length - 1));
+        newValue = newValue.substring(5, newValue.length - 1)
+        handleAddNewValue(field, newValue);
         return;
       }
       setInventoryItem({ ...inventoryItem, [field]: newValue });
+      if (field === "brand") {
+        setSelectedBrand(newValue)
+      }
     } else if (newValue && newValue.inputValue) {
       handleAddNewValue(field, newValue.inputValue);
     } else {
       setInventoryItem({ ...inventoryItem, [field]: newValue });
       if (field === "brand") {
-        setSelectedBrand(newValue); // Update selected brand state
+        setSelectedBrand(newValue)
       }
     }
   };
@@ -404,9 +408,6 @@ const AddInventoryItem = ({
             ? `${newFieldValueLow}-${newFieldValueHigh} ${focalLengthUnit}`
             : `${newFieldValueLow} ${focalLengthUnit}`
           : newFieldValue;
-      if (fieldToAdd === "brand") {
-        setSelectedBrand(newValue)
-      }
       if (!existsInArray(table, newValue)) {
         var error = null;
         if (fieldToAdd === "model") {
@@ -456,6 +457,7 @@ const AddInventoryItem = ({
             break;
           case "brands":
             setBrands([...brands, newValue]);
+            setSelectedBrand(newValue);
             break;
           case "models":
             setModels([...models, newValue]);
