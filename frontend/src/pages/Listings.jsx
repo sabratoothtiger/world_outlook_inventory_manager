@@ -333,22 +333,26 @@ const Listings = () => {
       const labelData = [];
       for (const listingId of listingIds) {
         const listing = listings.find((listing) => listing.id === listingId);
-        const barcode = "LIS^" + listing.id + "^" + listing.serial_number;
+        let serialNumber = ""
+        if (listing.serial_number) {
+          serialNumber = listing.serial_number
+        }
+        const barcode = "LIS^" + listingId + "^" + serialNumber;
         const { title1, title2 } = parseTitleForLabel(listing.title);
         labelData.push({
-          "Listing ID": listing.id,
-          Source: listing.listing_site,
+          "Listing ID": listingId,
+          "Source": listing.listing_site,
           "Title 1": title1,
           "Title 2": title2,
-          "Serial Number": listing.serial_number,
+          "Serial Number": serialNumber,
           "Listing Barcode": barcode,
         });
       }
-      const { error: printError } = await sendLabelsToPrinter(
+
+      await sendLabelsToPrinter(
         labelData,
         "listing"
       );
-      if (printError) throw new Error(printError.message);
 
       for (const listingId of listingIds) {
         await supabase
