@@ -279,15 +279,17 @@ const Listings = () => {
           .eq("id", listingId);
         if (listingStatusUpdateError)
           throw new Error(listingStatusUpdateError.message);
+        
         await supabase
           .from("listing_histories")
           .insert([{ listing_id: listingId, status: newStatus }]);
+
         const listingStatusToInventoryItemStatusMapping = {
-          Active: "Listed",
-          Sold: "Sold",
-          Returned: "Returned by buyer",
+          "Active": "Listed",
+          "Sold": "Sold",
+          "Returned": "Returned by buyer",
           "Canceled by buyer": "Received (unlisted)",
-          Removed: "Received (unlisted)",
+          "Removed": "Received (unlisted)",
         };
         const inventoryItemStatus =
           listingStatusToInventoryItemStatusMapping[newStatus];
@@ -297,18 +299,31 @@ const Listings = () => {
           .eq("listing_id", listingId);
         if (inventoryItemStatusUpdateError)
           throw new Error(inventoryItemStatusUpdateError.message);
-        const { data: inventoryItems } = await supabase
+        
+        const { data: inventoryItems, error: findInventoryItemsError} = await supabase
           .from("inventory_items")
           .select("id")
           .eq("listing_id", listingId);
-        await supabase
-          .from("inventory_item_histories")
-          .insert([
-            {
-              inventory_item_id: inventoryItems[0].id,
-              status: inventoryItemStatus,
-            },
-          ]);
+        
+        if (findInventoryItemsError) {
+          throw new Error(findInventoryItemsError.message)
+        } else if (inventoryItems && inventoryItems.length > 0) {
+          // Only proceed if inventoryItems has data
+          await supabase
+            .from("inventory_item_histories")
+            .insert([
+              {
+                inventory_item_id: inventoryItems[0].id,
+                status: inventoryItemStatus,
+              },
+            ])
+            .then(({ error: inventoryItemHistoryUpdateError }) => {
+              if (inventoryItemHistoryUpdateError) {
+                throw new Error(inventoryItemHistoryUpdateError.message)
+              }
+            });
+        }      
+
         setListings((prevListings) =>
           prevListings.map((listing) =>
             listing.id === listingId
