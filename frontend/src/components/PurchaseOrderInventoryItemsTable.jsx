@@ -207,7 +207,7 @@ const PurchaseOrderInventoryItemsTable = ({ purchaseOrder, inventoryItems, setIn
       <DataGrid
         rows={inventoryItems || []}
         columns={columns || []}
-        pageSizeOptions={[15, 25, 50]}
+        pageSizeOptions={[15, 25, 50, 100]}
         initialState={{
           pagination: {
             pageSize: 15,
