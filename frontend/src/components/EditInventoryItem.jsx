@@ -121,10 +121,10 @@ const EditInventoryItem = ({ inventoryItem, setInventoryItem, fetchInventoryItem
           subcategory: inventoryItem.subcategory,
           brand: inventoryItem.brand,
           model: inventoryItem.model,
-          f_stop: inventoryItem.fStop,
-          focal_length: inventoryItem.focalLength,
+          f_stop: inventoryItem.f_stop,
+          focal_length: inventoryItem.focal_length,
           details: inventoryItem.details,
-          serial_number: inventoryItem.serialNumber,
+          serial_number: inventoryItem.serial_number,
           status: inventoryItem.status,
           last_updated_at: new Date().toISOString(),
         })
