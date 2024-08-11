@@ -127,6 +127,7 @@ const PurchaseOrderInventoryItemsTable = ({ purchaseOrder, inventoryItems, setIn
   const handleAddDrawerClose = () => {
     setOpenAddDrawer(false)
     fetchInventoryItems(purchaseOrder.id)
+    fetchModelsLookup()
   }
 
   const handleDialogClose = () => {
