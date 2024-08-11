@@ -172,10 +172,8 @@ const Listings = () => {
   const handlePullFromEbay = async () => {
     setLoading(true);
     try {
-      const url = process.env.REACT_APP_API_URL + "/api/fetch_ebay_listings"
-      const response = await fetch(
-        url
-      );
+      const url = process.env.REACT_APP_API_URL + "/api/fetch_ebay_listings";
+      const response = await fetch(url);
       const data = await response.json();
       if (data.status === "success") {
         console.log("Listings fetched successfully");
@@ -210,7 +208,11 @@ const Listings = () => {
                   .slice()
                   .reverse()
                   .map((listing) => (
-                    <ListingCard key={listing.id} listing={listing} updateListingById={updateListingById}/>
+                    <ListingCard
+                      key={listing.id}
+                      listing={listing}
+                      updateListingById={updateListingById}
+                    />
                   ))
               ) : (
                 <Typography>No listings available</Typography>
@@ -253,7 +255,9 @@ const Listings = () => {
   // Function to update a single listing by ID
   const updateListingById = (updatedListing) => {
     // Find the index of the listing to update
-    const index = listings.findIndex(listing => listing.id === updatedListing.id);
+    const index = listings.findIndex(
+      (listing) => listing.id === updatedListing.id
+    );
     if (index !== -1) {
       // Create a new array with the updated listing
       const updatedListings = [...listings];
@@ -261,7 +265,6 @@ const Listings = () => {
       setListings(updatedListings);
     }
   };
-
 
   const handleOpenBulkStatusUpdateDialog = (listingIds) => {
     setSelectedListingIds(listingIds);
@@ -279,17 +282,17 @@ const Listings = () => {
           .eq("id", listingId);
         if (listingStatusUpdateError)
           throw new Error(listingStatusUpdateError.message);
-        
+
         await supabase
           .from("listing_histories")
           .insert([{ listing_id: listingId, status: newStatus }]);
 
         const listingStatusToInventoryItemStatusMapping = {
-          "Active": "Listed",
-          "Sold": "Sold",
-          "Returned": "Returned by buyer",
+          Active: "Listed",
+          Sold: "Sold",
+          Returned: "Returned by buyer",
           "Canceled by buyer": "Received (unlisted)",
-          "Removed": "Received (unlisted)",
+          Removed: "Received (unlisted)",
         };
         const inventoryItemStatus =
           listingStatusToInventoryItemStatusMapping[newStatus];
@@ -299,14 +302,15 @@ const Listings = () => {
           .eq("listing_id", listingId);
         if (inventoryItemStatusUpdateError)
           throw new Error(inventoryItemStatusUpdateError.message);
-        
-        const { data: inventoryItems, error: findInventoryItemsError} = await supabase
-          .from("inventory_items")
-          .select("id")
-          .eq("listing_id", listingId);
-        
+
+        const { data: inventoryItems, error: findInventoryItemsError } =
+          await supabase
+            .from("inventory_items")
+            .select("id")
+            .eq("listing_id", listingId);
+
         if (findInventoryItemsError) {
-          throw new Error(findInventoryItemsError.message)
+          throw new Error(findInventoryItemsError.message);
         } else if (inventoryItems && inventoryItems.length > 0) {
           // Only proceed if inventoryItems has data
           await supabase
@@ -319,10 +323,10 @@ const Listings = () => {
             ])
             .then(({ error: inventoryItemHistoryUpdateError }) => {
               if (inventoryItemHistoryUpdateError) {
-                throw new Error(inventoryItemHistoryUpdateError.message)
+                throw new Error(inventoryItemHistoryUpdateError.message);
               }
             });
-        }      
+        }
 
         setListings((prevListings) =>
           prevListings.map((listing) =>
@@ -345,38 +349,33 @@ const Listings = () => {
 
   const handlePrintClick = (listingIds) => async () => {
     try {
-      const labelData = [];
-      for (const listingId of listingIds) {
+      const labelData = listingIds.map((listingId) => {
         const listing = listings.find((listing) => listing.id === listingId);
-        let serialNumber = ""
-        if (listing.serial_number) {
-          serialNumber = listing.serial_number
-        }
-        const barcode = "LIS^" + listingId + "^" + serialNumber;
+        const serialNumber = listing.serial_number || "";
+        const barcode = `LIS^${listingId}^${serialNumber}`;
         const { title1, title2 } = parseTitleForLabel(listing.title);
-        labelData.push({
+
+        return {
           "Listing ID": listingId,
           "Source": listing.listing_site,
           "Title 1": title1,
           "Title 2": title2,
           "Serial Number": serialNumber,
           "Listing Barcode": barcode,
-        });
-      }
+        };
+      });
 
-      await sendLabelsToPrinter(
-        labelData,
-        "listing"
-      );
+      // Attempt to send labels to the printer
+      await sendLabelsToPrinter(labelData, "listing");
 
-      for (const listingId of listingIds) {
-        await supabase
+      // If printing is successful, mark listings as printed
+      const updatePromises = listingIds.map((listingId) =>
+        supabase
           .from("listings")
-          .update({
-            label_printed: true,
-          })
-          .eq("id", listingId);
-      }
+          .update({ label_printed: true })
+          .eq("id", listingId)
+      );
+      await Promise.all(updatePromises);
     } catch (error) {
       enqueueSnackbar("Error printing label: " + error, { variant: "error" });
       console.error("Error printing label:", error);
