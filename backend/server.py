@@ -84,7 +84,7 @@ def fetch_ebay_listings():
                 serial_number = parse_serial_number_from_title(title)
                 
                 listing_price_elem = item_info.find('span', class_='s-item__price')
-                listing_price = listing_price_elem.text.strip().replace('$', '') if listing_price_elem else None
+                listing_price = listing_price_elem.text.strip().replace('$', '').replace(',','') if listing_price_elem else None
                 
                 listing_date_elem = item_info.find('span', class_='s-item__dynamic s-item__listingDate')
                 listed_at = listing_date_to_timestamp(listing_date_elem).isoformat()
