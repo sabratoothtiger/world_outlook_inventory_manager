@@ -1,3 +1,20 @@
+Conversation opened. 1 unread message.
+
+
+Skip to content
+Using Gmail with screen readers
+2 of 1,716
+Server Fix
+Inbox
+
+Mike Morgan
+Attachments
+1:09 PM (2 minutes ago)
+to me
+
+
+ One attachment
+  •  Scanned by Gmail
 import os
 from flask import Flask, jsonify
 import requests
@@ -58,8 +75,14 @@ def fetch_ebay_listings():
         response = requests.get(url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
-            ebay_listings = soup.find_all('div', class_='s-item__wrapper clearfix') 
-            
+
+            # ORIGINAL selector (kept)
+            ebay_listings = soup.find_all('div', class_='s-item__wrapper clearfix')
+
+            # ✅ ADD: also grab new "s-card" layout items and append
+            s_card_listings = soup.find_all('li', class_=lambda c: c and c.startswith('s-card'))
+            ebay_listings = ebay_listings + s_card_listings
+
             supabase_listings_data = supabase.table('listings').select('listing_site_reference_id').eq('listing_site','ebay').execute().data
             existing_listings = [listing['listing_site_reference_id'] for listing in supabase_listings_data]
             
@@ -67,35 +90,83 @@ def fetch_ebay_listings():
             listing_histories_inserts = []
 
             for listing in ebay_listings:
-                item_info = listing.find('div', class_='s-item__info clearfix') 
-                anchor = item_info.find('a', class_='s-item__link')
-                href = anchor.get('href')
-                listing_id = re.search(r'/(\d+)\?', href).group(1)
+                # Try ORIGINAL structure first
+                item_info = listing.find('div', class_='s-item__info clearfix') if hasattr(listing, "find") else None
+
+                # Anchor / href / id
+                anchor = None
+                href = None
+                if item_info:
+                    anchor = item_info.find('a', class_='s-item__link')
+                if not anchor:
+                    # ✅ ADD: fallback for s-card layout
+                    anchor = listing.find('a', href=True)
+                if anchor:
+                    href = anchor.get('href')
+
+                listing_id = None
+                if href:
+                    m = re.search(r'/(\d+)(?:\?|$)', href)
+                    if m:
+                        listing_id = m.group(1)
+                if not listing_id:
+                    # If we can't find an id, skip this card
+                    continue
+
                 if listing_id == '123456':
                     continue
                 if listing_id in existing_listings:
                     continue
-                
-                item_title_elem = item_info.find('div', class_='s-item__title')
+
+                # Title
+                item_title_elem = item_info.find('div', class_='s-item__title') if item_info else None
+                if not item_title_elem:
+                    # ✅ ADD: s-card title fallback
+                    item_title_elem = listing.find('div', class_='s-card__title')
                 title = item_title_elem.text.strip() if item_title_elem else None
-                if title.startswith("New Listing"):
+                if title and title.startswith("New Listing"):
                     title = title.replace("New Listing", "").strip()
-                    
-                serial_number = parse_serial_number_from_title(title)
-                
-                listing_price_elem = item_info.find('span', class_='s-item__price')
-                listing_price = listing_price_elem.text.strip().replace('$', '').replace(',','') if listing_price_elem else None
-                
-                listing_date_elem = item_info.find('span', class_='s-item__dynamic s-item__listingDate')
-                listed_at = listing_date_to_timestamp(listing_date_elem).isoformat()
-                
-                
-                image_info = listing.find('div', class_='s-item__image-section') 
-                thumbnail_wrapper_elem = image_info.find('div', class_='s-item__image-wrapper')
-                thumbnail_url_elem = thumbnail_wrapper_elem.find('img')
-                thumbnail_url = thumbnail_url_elem['src'] if thumbnail_url_elem else None
+
+                serial_number = parse_serial_number_from_title(title) if title else None
+
+                # Price (new first, then old)
+                listing_price_elem = None
+                if item_info:
+                    listing_price_elem = item_info.find('span', class_='s-card__price')
+                    if not listing_price_elem:
+                        listing_price_elem = item_info.find('span', class_='s-item__price')
+                if not listing_price_elem:
+                    # ✅ ADD: search at card level as well
+                    listing_price_elem = listing.find('span', class_='s-card__price') or listing.find('span', class_='s-item__price')
+                listing_price = (
+                    listing_price_elem.text.strip().replace('$', '').replace(',', '')
+                    if listing_price_elem else None
+                )
+
+                # Listing date (keep original, with safe fallback to card-level search)
+                listing_date_elem = None
+                if item_info:
+                    listing_date_elem = item_info.find('span', class_='s-item__dynamic s-item__listingDate')
+                if not listing_date_elem:
+                    listing_date_elem = listing.find('span', class_='s-item__dynamic s-item__listingDate')
+                listed_at_dt = listing_date_to_timestamp(listing_date_elem)
+                listed_at = listed_at_dt.isoformat() if listed_at_dt else None
+
+                # Thumbnail (keep original, add fallback)
+                thumbnail_url = None
+                image_info = listing.find('div', class_='s-item__image-section') if hasattr(listing, "find") else None
+                if image_info:
+                    thumbnail_wrapper_elem = image_info.find('div', class_='s-item__image-wrapper')
+                    thumbnail_url_elem = thumbnail_wrapper_elem.find('img') if thumbnail_wrapper_elem else None
+                    if thumbnail_url_elem and thumbnail_url_elem.get('src'):
+                        thumbnail_url = thumbnail_url_elem['src']
+                if not thumbnail_url:
+                    # ✅ ADD: generic img fallback for s-card
+                    img_elem = listing.find('img')
+                    if img_elem and img_elem.get('src'):
+                        thumbnail_url = img_elem['src']
+
                 id = "ebay_" + listing_id
-                
                 listing_data = {
                     "id": id,
                     "listing_site": "ebay",
@@ -128,6 +199,7 @@ def fetch_ebay_listings():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
+
 @app.route('/api/fetch_goodwill_purchase_orders', methods=['GET', 'POST'])
 def fetch_goodwill_purchase_orders():
     pull_new_purchase_orders_from_goodwill()
@@ -136,3 +208,5 @@ def fetch_goodwill_purchase_orders():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
+server.py
+Displaying server.py.
