@@ -1,20 +1,3 @@
-Conversation opened. 1 unread message.
-
-
-Skip to content
-Using Gmail with screen readers
-2 of 1,716
-Server Fix
-Inbox
-
-Mike Morgan
-Attachments
-1:09 PM (2 minutes ago)
-to me
-
-
- One attachment
-  •  Scanned by Gmail
 import os
 from flask import Flask, jsonify
 import requests
@@ -208,5 +191,3 @@ def fetch_goodwill_purchase_orders():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
-server.py
-Displaying server.py.
