@@ -53,135 +53,202 @@ def listing_date_to_timestamp(listing_date_elem):
 
 @app.route('/api/fetch_ebay_listings', methods=['GET', 'POST'])
 def fetch_ebay_listings():
-    try: 
-        url = 'https://www.ebay.com/sch/i.html?_dkr=1&iconV2Request=true&_blrs=recall_filtering&_ssn=urbud&store_name=urbud&_sop=10&_oac=1&_ipg=240'
-        response = requests.get(url)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-
-            # ORIGINAL selector (kept)
-            ebay_listings = soup.find_all('div', class_='s-item__wrapper clearfix')
-
-            # ✅ ADD: also grab new "s-card" layout items and append
-            s_card_listings = soup.find_all('li', class_=lambda c: c and c.startswith('s-card'))
-            ebay_listings = ebay_listings + s_card_listings
-
-            supabase_listings_data = supabase.table('listings').select('listing_site_reference_id').eq('listing_site','ebay').execute().data
-            existing_listings = [listing['listing_site_reference_id'] for listing in supabase_listings_data]
+    """
+    Fetches eBay listings using multiple fallback selectors during parsing
+    for resiliency to eBay's HTML structure changes.
+    """
+    url = "https://www.ebay.com/sch/i.html?_dkr=1&iconV2Request=true&_blrs=recall_filtering&_ssn=urbud&store_name=urbud&_sop=10&_oac=1&_ipg=240"
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Multiple selectors for listing containers (in order of preference)
+        listing_selectors = [
+            'div.s-item__wrapper.clearfix',
+            'li[class*="s-card"]',
+            '.s-item',
+            '[data-testid*="item"]',
+            '.srp-results .s-item'
+        ]
+        
+        supabase_listings_data = supabase.table('listings').select('listing_site_reference_id').eq('listing_site','ebay').execute().data
+        existing_listings = [listing['listing_site_reference_id'] for listing in supabase_listings_data]
             
-            listing_upserts = []
-            listing_histories_inserts = []
-
-            for listing in ebay_listings:
-                # Try ORIGINAL structure first
-                item_info = listing.find('div', class_='s-item__info clearfix') if hasattr(listing, "find") else None
-
-                # Anchor / href / id
-                anchor = None
-                href = None
-                if item_info:
-                    anchor = item_info.find('a', class_='s-item__link')
-                if not anchor:
-                    # ✅ ADD: fallback for s-card layout
-                    anchor = listing.find('a', href=True)
-                if anchor:
-                    href = anchor.get('href')
-
+        listing_upserts = []
+        listing_histories_inserts = []
+        listing_containers = None
+        
+        # Find the best working selector for listing containers
+        for selector in listing_selectors:
+            listing_containers = soup.select(selector)
+            if listing_containers and len(listing_containers) > 5:  # Ensure we have meaningful results
+                break
+        
+        if not listing_containers:
+            return []
+        
+        for listing in listing_containers:
+            try:
+                # Extract title with multiple fallback selectors
+                title_selectors = [
+                    '.s-item__title',
+                    '.s-card__title', 
+                    '[data-testid="item-title"]',
+                    '.it-ttl',
+                    'h3'
+                ]
+                
+                title = None
+                for selector in title_selectors:
+                    title_elem = listing.select_one(selector)
+                    if title_elem and title_elem.get_text(strip=True):
+                        title = title_elem.get_text(strip=True)
+                        # Remove "New Listing" prefix if present
+                        title = re.sub(r'^New Listing\s*', '', title)
+                        break
+                
+                # Extract price with multiple fallback selectors
+                price_selectors = [
+                    '.s-card__price',
+                    '.s-item__price',
+                    '[data-testid="item-price"]',
+                    '.notranslate'
+                ]
+                
+                price = None
+                for selector in price_selectors:
+                    price_elem = listing.select_one(selector)
+                    if price_elem and price_elem.get_text(strip=True):
+                        price_text = price_elem.get_text(strip=True)
+                        # Extract numeric price value
+                        price_match = re.search(r'[\d,]+\.?\d*', price_text.replace('$', '').replace(',', ''))
+                        if price_match:
+                            try:
+                                price = float(price_match.group())
+                                break
+                            except ValueError:
+                                continue
+                
+                # Extract link and listing ID with multiple fallback selectors
+                link_selectors = [
+                    '.s-item__link',
+                    'a[href*="/itm/"]',
+                    'a[href*="ebay.com"]'
+                ]
+                
+                link = None
                 listing_id = None
-                if href:
-                    m = re.search(r'/(\d+)(?:\?|$)', href)
-                    if m:
-                        listing_id = m.group(1)
-                if not listing_id:
-                    # If we can't find an id, skip this card
-                    continue
-
-                if listing_id == '123456':
-                    continue
-                if listing_id in existing_listings:
-                    continue
-
-                # Title
-                item_title_elem = item_info.find('div', class_='s-item__title') if item_info else None
-                if not item_title_elem:
-                    # ✅ ADD: s-card title fallback
-                    item_title_elem = listing.find('div', class_='s-card__title')
-                title = item_title_elem.text.strip() if item_title_elem else None
-                if title and title.startswith("New Listing"):
-                    title = title.replace("New Listing", "").strip()
-
-                serial_number = parse_serial_number_from_title(title) if title else None
-
-                # Price (new first, then old)
-                listing_price_elem = None
-                if item_info:
-                    listing_price_elem = item_info.find('span', class_='s-card__price')
-                    if not listing_price_elem:
-                        listing_price_elem = item_info.find('span', class_='s-item__price')
-                if not listing_price_elem:
-                    # ✅ ADD: search at card level as well
-                    listing_price_elem = listing.find('span', class_='s-card__price') or listing.find('span', class_='s-item__price')
-                listing_price = (
-                    listing_price_elem.text.strip().replace('$', '').replace(',', '')
-                    if listing_price_elem else None
-                )
-
-                # Listing date (keep original, with safe fallback to card-level search)
-                listing_date_elem = None
-                if item_info:
-                    listing_date_elem = item_info.find('span', class_='s-item__dynamic s-item__listingDate')
-                if not listing_date_elem:
-                    listing_date_elem = listing.find('span', class_='s-item__dynamic s-item__listingDate')
-                listed_at_dt = listing_date_to_timestamp(listing_date_elem)
-                listed_at = listed_at_dt.isoformat() if listed_at_dt else None
-
-                # Thumbnail (keep original, add fallback)
+                for selector in link_selectors:
+                    link_elem = listing.select_one(selector)
+                    if link_elem and link_elem.get('href'):
+                        link = link_elem.get('href')
+                        # Extract listing ID from various URL patterns
+                        id_patterns = [
+                            r'/(\d{12,15})(?:\?|$)',  # Standard eBay item ID
+                            r'/itm/[^/]+/(\d+)',      # Alternative format
+                            r'ebay\.com/.*?(\d{12,15})',  # General pattern
+                        ]
+                        
+                        for pattern in id_patterns:
+                            match = re.search(pattern, link)
+                            if match:
+                                listing_id = match.group(1)
+                                if listing_id in existing_listings or listing_id == '123456':
+                                    listing_id = None
+                                    continue
+                                break
+                        
+                        if listing_id:
+                            break
+                
+                # Extract thumbnail with multiple fallback selectors
+                image_selectors = [
+                    '.s-item__image img',
+                    '.s-card__image img',
+                    '[data-testid="item-image"] img',
+                    'img'
+                ]
+                
                 thumbnail_url = None
-                image_info = listing.find('div', class_='s-item__image-section') if hasattr(listing, "find") else None
-                if image_info:
-                    thumbnail_wrapper_elem = image_info.find('div', class_='s-item__image-wrapper')
-                    thumbnail_url_elem = thumbnail_wrapper_elem.find('img') if thumbnail_wrapper_elem else None
-                    if thumbnail_url_elem and thumbnail_url_elem.get('src'):
-                        thumbnail_url = thumbnail_url_elem['src']
-                if not thumbnail_url:
-                    # ✅ ADD: generic img fallback for s-card
-                    img_elem = listing.find('img')
+                for selector in image_selectors:
+                    img_elem = listing.select_one(selector)
                     if img_elem and img_elem.get('src'):
-                        thumbnail_url = img_elem['src']
+                        src = img_elem.get('src')
+                        # Skip data URIs and placeholder images
+                        if not src.startswith('data:') and 'placeholder' not in src.lower():
+                            thumbnail_url = src
+                            break
+                
+                # Extract listing date (try multiple approaches)
+                date_posted = None
+                try:
+                    # Look for date elements
+                    date_selectors = [
+                        '.s-item__time',
+                        '.s-item__time-left',
+                        '[data-testid="item-time"]',
+                        '.time-left'
+                    ]
+                    
+                    for selector in date_selectors:
+                        date_elem = listing.select_one(selector)
+                        if date_elem:
+                            date_text = date_elem.get_text(strip=True)
+                            # Parse various date formats
+                            if 'day' in date_text.lower() or 'hour' in date_text.lower():
+                                date_posted = datetime.now()  # Use current date for relative times
+                            break
+                    
+                    if not date_posted:
+                        date_posted = datetime.now()  # Fallback to current date
+                        
+                except Exception as e:
+                    date_posted = datetime.now()
+                
+                # Only add listing if we have essential data
+                if title and listing_id and price is not None:
+                    id = "ebay_" + listing_id
+                    listing_data = {
+                        'ld': id,
+                        'listing_site': 'ebay',
+                        'listing_site_reference_id': listing_id,
+                        'title': title,
+                        'serial_number': parse_serial_number_from_title(title),
+                        'listing_date': date_posted.isoformat() if date_posted else None,
+                        'listing_price': price,
+                        'thumbnail_url': thumbnail_url or '',
+                        'listing_url': link or '',
+                        'status': 'Active',
+                        'created_at': datetime.now().isoformat()
+                    }
+                    listing_upserts.append(listing_data)
 
-                id = "ebay_" + listing_id
-                listing_data = {
-                    "id": id,
-                    "listing_site": "ebay",
-                    "listing_site_reference_id": listing_id,
-                    "title": title,
-                    "serial_number": serial_number,
-                    "listing_date": listed_at,
-                    "listing_price": listing_price,
-                    "thumbnail_url": thumbnail_url,
-                    "listing_url": href,
-                    "status": "Active",
-                    "created_at": datetime.now().isoformat()
-                }
-                listing_upserts.append(listing_data)
-
-                history_data = {
-                    "listing_id": id,
-                    "status": "Active"
-                }
-                listing_histories_inserts.append(history_data)
-
-            if listing_upserts:
-                supabase.table('listings').upsert(listing_upserts).execute()
+                    history_data = {
+                        'listing_id': id,
+                        'status': 'Active'
+                    }
+                    listing_histories_inserts.append(history_data)
+            except Exception as e:
+                return jsonify({'status': 'error', 'message': str(e)})
+                                
+        if listing_upserts:
+            supabase.table('listings').upsert(listing_upserts).execute()
             if listing_histories_inserts:
                 supabase.table('listing_histories').insert(listing_histories_inserts).execute()
-
             return jsonify({'status': 'success', 'uploaded': len(listing_upserts)})
         else:
             return jsonify({'status': 'error', 'message': 'Failed to retrieve eBay listings'})
+    
+    except requests.RequestException as e:
+        return jsonify({'status': 'error', 'message': str(e)})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
-
 
 @app.route('/api/fetch_goodwill_purchase_orders', methods=['GET', 'POST'])
 def fetch_goodwill_purchase_orders():
