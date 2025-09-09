@@ -65,7 +65,6 @@ def fetch_ebay_listings():
     
     try:
         response = requests.get(url, headers=headers)
-        response = requests.get(url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             
