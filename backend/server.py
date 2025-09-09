@@ -243,7 +243,8 @@ def fetch_ebay_listings():
                     supabase.table('listing_histories').insert(listing_histories_inserts).execute()
             return jsonify({'status': 'success', 'uploaded': len(listing_upserts)})
         else:
-            return jsonify({'status': 'error', 'message': response.status_code & response.text})
+            temp_error_message = f"{response.status_code} {response.text}"
+            return jsonify({'status': 'error', 'message': temp_error_message})
     
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
