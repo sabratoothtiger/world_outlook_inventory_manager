@@ -216,7 +216,7 @@ def fetch_ebay_listings():
                     if title and listing_id and price is not None:
                         id = "ebay_" + listing_id
                         listing_data = {
-                            'ld': id,
+                            'id': id,
                             'listing_site': 'ebay',
                             'listing_site_reference_id': listing_id,
                             'title': title,
